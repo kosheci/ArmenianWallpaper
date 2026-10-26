@@ -1,0 +1,23 @@
+name: Recover Astuats-Arasce 1.3 sources
+on:
+  workflow_dispatch:
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check original APK is present
+        run: test -f recovery/Astuats-Arasce-1.3.apk
+      - name: Install JADX
+        run: |
+          curl -fL --retry 3 https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip -o jadx.zip
+          mkdir jadx && unzip -q jadx.zip -d jadx
+      - name: Decompile original APK
+        run: |
+          mkdir -p recovery/output
+          jadx/bin/jadx --show-bad-code -d recovery/output recovery/Astuats-Arasce-1.3.apk
+      - name: Upload recovered sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: arasce-1.3-decompiled
+          path: recovery/output/
