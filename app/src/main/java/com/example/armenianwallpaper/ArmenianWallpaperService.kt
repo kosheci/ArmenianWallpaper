@@ -20,8 +20,8 @@ class ArmenianWallpaperService:WallpaperService(){
   private fun render(){
    var canvas:Canvas?=null
    try{
-    canvas=surfaceHolder.lockCanvas()?:return
-    val c=canvas
+    val c=surfaceHolder.lockCanvas() ?: return
+    canvas=c
     val w=c.width.toFloat();val h=c.height.toFloat();val r=min(w,h)*.32f
     val date=LocalDate.now()
     val special=prefs.getBoolean("special",true)
