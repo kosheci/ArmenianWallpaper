@@ -6,6 +6,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.hardware.GeomagneticField;
+import android.location.Location;
+import android.view.Surface;
+import android.view.WindowManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -26,6 +30,10 @@ public class ArasceWallpaperService extends WallpaperService {
     }
 
     private final class ArasceEngine extends WallpaperService.Engine implements SensorEventListener, SharedPreferences.OnSharedPreferenceChangeListener {
+        private Sensor rotationSensor;
+        private final float[] rotationMatrix = new float[9];
+        private final float[] remappedMatrix = new float[9];
+        private final float[] orientation = new float[3];
         private boolean baseSet;
         private float baseX;
         private float baseY;
@@ -97,6 +105,7 @@ public class ArasceWallpaperService extends WallpaperService {
                 }
             };
             this.sensorManager = (SensorManager) ArasceWallpaperService.this.getSystemService("sensor");
+            this.rotationSensor = this.sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
             Sensor defaultSensor = this.sensorManager.getDefaultSensor(9);
             this.sensor = defaultSensor == null ? this.sensorManager.getDefaultSensor(1) : defaultSensor;
             this.prefs = Settings.prefs(ArasceWallpaperService.this);
@@ -129,6 +138,11 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.raysOn = this.prefs.getBoolean("rays", false);
             this.renderer.nebulaOn = this.prefs.getBoolean("nebula", true);
             this.renderer.mapOn = this.prefs.getBoolean("map", true);
+            this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", true);
+            this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
+            if (!this.renderer.compassOn) this.renderer.compassReady = false;
+            this.renderer.compassStatus = this.rotationSensor == null ? "датчик недоступен" : "обновите местоположение";
+            if (this.visibleNow && this.renderer.compassOn && this.rotationSensor != null) this.sensorManager.registerListener(this, this.rotationSensor, SensorManager.SENSOR_DELAY_UI);
             this.renderer.perspectiveOn = this.prefs.getBoolean("perspective", true);
             this.renderer.celestialOn = this.prefs.getBoolean("celestial", true);
             this.renderer.batteryOn = this.prefs.getBoolean("battery", true);
@@ -159,6 +173,7 @@ public class ArasceWallpaperService extends WallpaperService {
                 if (this.sensor != null) {
                     this.sensorManager.registerListener(this, this.sensor, 1);
                 }
+                if (this.renderer.compassOn && this.rotationSensor != null) this.sensorManager.registerListener(this, this.rotationSensor, SensorManager.SENSOR_DELAY_UI);
                 this.baseSet = false;
                 this.lastPaletteT = -100.0f;
                 this.lastFrameT = -1.0f;
@@ -289,10 +304,32 @@ public class ArasceWallpaperService extends WallpaperService {
         }
 
         @Override // android.hardware.SensorEventListener
-        public void onSensorChanged(SensorEvent sensorEvent) {
-            this.gx = sensorEvent.values[0];
-            this.gy = sensorEvent.values[1];
-            this.hasReading = true;
+        public void onSensorChanged(SensorEvent event) {
+            if (event.sensor.getType() != Sensor.TYPE_ROTATION_VECTOR) {
+                this.gx = event.values[0]; this.gy = event.values[1]; this.hasReading = true; return;
+            }
+            if (!this.renderer.compassOn) return;
+            long at = this.prefs.getLong("ararat_location_time", 0L);
+            if (at <= 0 || System.currentTimeMillis() - at > 86400000L) {
+                this.renderer.compassReady = false; return;
+            }
+            float lat = this.prefs.getFloat("ararat_lat", 0f), lon = this.prefs.getFloat("ararat_lon", 0f);
+            float[] result = new float[3];
+            Location.distanceBetween(lat, lon, 39.70194, 44.29833, result);
+            SensorManager.getRotationMatrixFromVector(this.rotationMatrix, event.values);
+            int rotation = ((WindowManager) ArasceWallpaperService.this.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+            int axisX = SensorManager.AXIS_X, axisY = SensorManager.AXIS_Y;
+            if (rotation == Surface.ROTATION_90) { axisX = SensorManager.AXIS_Y; axisY = SensorManager.AXIS_MINUS_X; }
+            else if (rotation == Surface.ROTATION_180) { axisX = SensorManager.AXIS_MINUS_X; axisY = SensorManager.AXIS_MINUS_Y; }
+            else if (rotation == Surface.ROTATION_270) { axisX = SensorManager.AXIS_MINUS_Y; axisY = SensorManager.AXIS_X; }
+            if (!SensorManager.remapCoordinateSystem(this.rotationMatrix, axisX, axisY, this.remappedMatrix)) {
+                this.renderer.compassReady = false; return;
+            }
+            SensorManager.getOrientation(this.remappedMatrix, this.orientation);
+            GeomagneticField field = new GeomagneticField(lat, lon, 0f, System.currentTimeMillis());
+            float trueHeading = (float)Math.toDegrees(this.orientation[0]) + field.getDeclination();
+            this.renderer.compassAngle = result[1] - trueHeading;
+            this.renderer.compassReady = true;
         }
 
         @Override // android.hardware.SensorEventListener
@@ -346,6 +383,7 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.flare = this.flare;
             if (fNow - this.lastPaletteT > 20.0f) {
                 this.renderer.setPalette(this.dayCycle ? Palette.forNow() : Palette.DAY);
+                this.renderer.updateCalendar();
                 if (this.renderer.batteryOn) updateBattery();
                 this.lastPaletteT = fNow;
             }

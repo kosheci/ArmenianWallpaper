@@ -58,6 +58,15 @@ final class ArasceRenderer {
     boolean raysOn = true;
     boolean nebulaOn = true;
     boolean mapOn = true;
+    boolean calendarOn = true;
+    boolean compassOn = false;
+    volatile boolean compassReady = false;
+    volatile float compassAngle = 0f;
+    String compassStatus = "Обновите местоположение";
+    private String calendarText = "";
+    private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path compassPath = new Path();
+    void updateCalendar() { calendarText = ArmenianCalendar.format(java.time.LocalDate.now()); }
     boolean perspectiveOn = true;
     private final Camera perspectiveCamera = new Camera();
     private final Matrix perspectiveMatrix = new Matrix();
@@ -658,7 +667,40 @@ final class ArasceRenderer {
                 canvas.drawBitmap(this.mBokeh[i2] ? this.bokehSprite : this.dotSprite, (Rect) null, this.tmpRect, this.spritePaint);
             }
             canvas.drawRect(0.0f, 0.0f, this.w, this.h, this.vignettePaint);
+            drawInfo(canvas);
         }
+    }
+
+    private void drawInfo(Canvas canvas) {
+        Paint p = this.infoPaint;
+        p.setShader(null); p.setStyle(Paint.Style.FILL); p.setColor(this.palette.light);
+        p.setTextAlign(Paint.Align.CENTER); p.setTypeface(Typeface.create("serif", Typeface.NORMAL));
+        p.setShadowLayer(4f, 0f, 1f, 0xaa000000);
+        float unit = Math.min(this.w, this.h);
+        if (this.calendarOn && !this.calendarText.isEmpty()) {
+            p.setAlpha(225); p.setTextSize(Math.max(17f, unit * 0.032f));
+            canvas.drawText(this.calendarText, this.cx, this.h * 0.15f, p);
+        }
+        if (this.compassOn) {
+            float y = this.h * 0.86f;
+            p.setTextSize(Math.max(16f, unit * 0.025f));
+            if (!this.compassReady) {
+                p.setAlpha(190);
+                canvas.drawText("Компас: " + this.compassStatus, this.cx, y, p);
+            } else {
+                canvas.save(); canvas.translate(this.cx, y - unit * 0.038f); canvas.rotate(this.compassAngle);
+                float size = unit * 0.033f;
+                this.compassPath.reset();
+                this.compassPath.moveTo(0, -size);
+                this.compassPath.lineTo(-size * 0.45f, size * 0.65f);
+                this.compassPath.lineTo(0, size * 0.34f);
+                this.compassPath.lineTo(size * 0.45f, size * 0.65f);
+                this.compassPath.close();
+                p.setAlpha(240); canvas.drawPath(this.compassPath, p); canvas.restore();
+                p.setAlpha(220); canvas.drawText("ԱՐԱՐԱՏ", this.cx, y + unit * 0.035f, p);
+            }
+        }
+        p.clearShadowLayer();
     }
 
     private void drawFlipDisc(Canvas canvas, float progress) {

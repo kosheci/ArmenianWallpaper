@@ -125,6 +125,12 @@ final class MapLayer {
                 canvas.drawCircle(f2, f3, 0.28f * textSize, this.dot);
                 canvas.drawText(CITIES[i2], f2, f3 - (0.6f * textSize), this.label);
             }
+            float araratX = (44.29833f - LON_C) * COS * this.k;
+            float araratY = -(39.70194f - LAT_C) * this.k;
+            this.label.setTextSize(textSize * 1.12f);
+            this.dot.setColor((this.lit & 16777215) | (iClamp << 24));
+            canvas.drawCircle(araratX, araratY, Math.max(3f, textSize * 0.35f), this.dot);
+            canvas.drawText("ԱՐԱՐԱՏ ▲", araratX, araratY - textSize, this.label);
             this.label.setTextSize(textSize);
             this.label.setLetterSpacing(0.18f);
         }

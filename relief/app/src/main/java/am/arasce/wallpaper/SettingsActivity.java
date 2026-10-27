@@ -17,6 +17,11 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 
 /* loaded from: classes.dex */
 public class SettingsActivity extends Activity {
@@ -27,6 +32,7 @@ public class SettingsActivity extends Activity {
     private static final int TEXT_DIM = -7566716;
     private SharedPreferences prefs;
     private LinearLayout root;
+    private LocationListener pendingLocation;
 
     @Override // android.app.Activity
     protected void onCreate(Bundle bundle) {
@@ -87,6 +93,13 @@ public class SettingsActivity extends Activity {
         slider(linearLayoutCard2, "Надпись в покое", "glow", 18, 0, 60, "%");
         slider(linearLayoutCard2, "Золотые пылинки", "motes", 40, 0, 150, "");
         toggle(linearLayoutCard2, "Цвет по времени суток", "Рассвет — розовое золото, день — золото, закат — янтарь, ночь — серебро", "daycycle", true);
+        section("Арарат и календарь");
+        LinearLayout heritage = card();
+        toggle(heritage, "Армянский календарь", "Традиционный 365-дневный календарь, летосчисление с 552 года", "armenian_calendar", true);
+        toggle(heritage, "Компас на Арарат", "Нужны компас телефона и недавно обновлённое местоположение", "ararat_compass", false);
+        Button locate = button("Разрешить и обновить местоположение", false);
+        locate.setOnClickListener(v -> requestAraratLocation());
+        heritage.addView(locate, fullWidth(dp(52)));
         section("Небесный круг");
         LinearLayout sky = card();
         toggle(sky, "Небесная орбита и Луна", "Тонкий круг со звёздами и приблизительной фазой Луны", "celestial", true);
@@ -126,6 +139,78 @@ public class SettingsActivity extends Activity {
             .putBoolean("nebula", true)
             .putBoolean("sheen", true).apply();
         build();
+    }
+
+    private void requestAraratLocation() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 420);
+            return;
+        }
+        obtainAraratLocation();
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != 420) return;
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            obtainAraratLocation();
+        } else {
+            Toast.makeText(this, "Разрешение не предоставлено: компас недоступен", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void saveAraratLocation(Location location) {
+        if (location == null || location.getTime() <= 0) return;
+        prefs.edit().putFloat("ararat_lat", (float)location.getLatitude())
+            .putFloat("ararat_lon", (float)location.getLongitude())
+            .putLong("ararat_location_time", location.getTime())
+            .putBoolean("ararat_compass", true).apply();
+    }
+
+    private void obtainAraratLocation() {
+        LocationManager lm = (LocationManager)getSystemService(LOCATION_SERVICE);
+        try {
+            String provider = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ? LocationManager.NETWORK_PROVIDER
+                    : (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                       && lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ? LocationManager.GPS_PROVIDER : null);
+            if (provider == null) {
+                Toast.makeText(this, "Включите геолокацию телефона и повторите", Toast.LENGTH_LONG).show();
+                return;
+            }
+            Location last = lm.getLastKnownLocation(provider);
+            if (last != null && System.currentTimeMillis() - last.getTime() < 86400000L) {
+                saveAraratLocation(last);
+                Toast.makeText(this, "Компас включён; уточняем местоположение", Toast.LENGTH_SHORT).show();
+            } else {
+                prefs.edit().putBoolean("ararat_compass", true).apply();
+                Toast.makeText(this, "Ожидаем местоположение; оставьте экран настроек открытым", Toast.LENGTH_LONG).show();
+            }
+            if (pendingLocation != null) lm.removeUpdates(pendingLocation);
+            pendingLocation = new LocationListener() {
+                @Override public void onLocationChanged(Location location) {
+                    saveAraratLocation(location);
+                    Toast.makeText(SettingsActivity.this, "Местоположение обновлено", Toast.LENGTH_SHORT).show();
+                    pendingLocation = null;
+                }
+                @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+                @Override public void onProviderEnabled(String provider) {}
+                @Override public void onProviderDisabled(String provider) {}
+            };
+            lm.requestSingleUpdate(provider, pendingLocation, getMainLooper());
+            build();
+        } catch (SecurityException | IllegalArgumentException e) {
+            Toast.makeText(this, "Не удалось получить местоположение", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override protected void onDestroy() {
+        if (pendingLocation != null) {
+            try { ((LocationManager)getSystemService(LOCATION_SERVICE)).removeUpdates(pendingLocation); }
+            catch (SecurityException ignored) {}
+        }
+        super.onDestroy();
     }
 
     public void openWallpaperPicker() {
