@@ -112,8 +112,8 @@ public class SettingsActivity extends Activity {
         toggle(effects, "Волны от касаний", "Круги света при касании и разблокировке", "ripples_enabled", true);
         toggle(effects, "Плавное пробуждение", "Мягкое появление при разблокировке", "wake_fade", true);
         toggle(effects, "Автоматическая экономия", "Около 30 кадров в секунду при заряде до 20% или системной экономии", "auto_energy", true);
-        toggle(effects, "Тихий ночной режим", "С 22:00 до 07:00 движение и яркость букв уменьшаются", "quiet_night", false);
-        toggle(effects, "Счётчик кадров", "Показывает число кадров, отправленных приложением за секунду", "fps_display", false);
+        toggle(effects, "Тихий ночной режим", "С 22:00 до 07:00 движение и яркость букв уменьшаются без ограничения частоты кадров", "quiet_night", false);
+        toggle(effects, "Счётчик кадров", "Кадры приложения, частота экрана и причина ограничения", "fps_display", false);
         section("Экран блокировки");
         LinearLayout lockScreen = card();
         TextView lockInfo = text("Работает, когда Android создаёт отдельный экран блокировки. При общем движке настройки экранов могут совпадать.", 12, TEXT_DIM);

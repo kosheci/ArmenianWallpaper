@@ -66,6 +66,7 @@ final class ArasceRenderer {
     boolean northOn = true, quietActive = false, mapTouchOn = true;
     boolean churchHolidaysOn = false, fpsOn = false;
     float fpsValue = 0f;
+    String fpsLabel = "FPS: измерение…", fpsDetail = "";
     private String churchHolidayText = "";
     float northAngle = 0f;
     private String selectedMapCity = "";
@@ -897,7 +898,9 @@ final class ArasceRenderer {
         }
         if (this.fpsOn) {
             p.setAlpha(210); p.setTextAlign(Paint.Align.LEFT); p.setTextSize(Math.max(16f, unit * 0.026f));
-            canvas.drawText(String.format(java.util.Locale.ROOT, "%.0f FPS (кадры приложения)", this.fpsValue), unit * 0.025f, this.h * 0.055f, p);
+            canvas.drawText(this.fpsLabel, unit * 0.025f, this.h * 0.055f, p);
+            p.setTextSize(Math.max(14f, unit * 0.021f));
+            canvas.drawText(this.fpsDetail, unit * 0.025f, this.h * 0.070f, p);
         }
         p.clearShadowLayer();
     }

@@ -41,6 +41,7 @@ public class ArasceWallpaperService extends WallpaperService {
         private float cachedAraratBearing, cachedDeclination;
         private long cachedBearingAt = 0L, environmentCheckedAt = 0L;
         private boolean cachedEconomy = false;
+        private String fpsLimitReason = "";
         private boolean baseSet;
         private float baseX;
         private float baseY;
@@ -427,7 +428,10 @@ public class ArasceWallpaperService extends WallpaperService {
                 android.os.PowerManager power = (android.os.PowerManager) ArasceWallpaperService.this.getSystemService(Context.POWER_SERVICE);
                 int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
                 this.renderer.quietActive = this.effectsEnabled && ((this.prefs.getBoolean("quiet_night", false) && (hour >= 22 || hour < 7)) || (isLockOnly() && this.prefs.getBoolean("lock_quiet", false)));
-                this.cachedEconomy = this.renderer.quietActive || (this.autoEnergy && ((power != null && power.isPowerSaveMode()) || (this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20)));
+                boolean powerSaver = power != null && power.isPowerSaveMode();
+                boolean lowBattery = this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20;
+                this.cachedEconomy = this.autoEnergy && (powerSaver || lowBattery);
+                this.fpsLimitReason = this.cachedEconomy ? (powerSaver ? "экономия системы" : "низкий заряд") : "без лимита приложения";
                 this.environmentCheckedAt = wall;
             }
             if (this.cachedEconomy && wall - this.lastEnergyFrame < 33) {
@@ -492,6 +496,9 @@ public class ArasceWallpaperService extends WallpaperService {
                             this.fpsFrames++;
                             if (completed - this.fpsStartMs >= 1000L) {
                                 this.renderer.fpsValue = 1000f * this.fpsFrames / (completed - this.fpsStartMs);
+                                android.view.Display display = ((WindowManager) ArasceWallpaperService.this.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+                                this.renderer.fpsLabel = String.format(java.util.Locale.ROOT, "%.0f FPS · экран %.0f Гц", this.renderer.fpsValue, display.getRefreshRate());
+                                this.renderer.fpsDetail = this.fpsLimitReason;
                                 this.fpsFrames = 0; this.fpsStartMs = completed;
                             }
                         } else { this.fpsStartMs = 0L; this.fpsFrames = 0; }
