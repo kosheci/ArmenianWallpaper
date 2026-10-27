@@ -24,7 +24,8 @@ final class MapLayer {
     private static final float[] REGION_LL = {39.4f,40.0f, 38.6f,38.9f, 40.5f,37.9f, 42.2f,39.1f, 42.9f,38.3f, 43.8f,37.9f, 45.0f,38.2f, 43.8f,39.0f, 45.7f,39.8f, 46.8f,40.0f, 48.3f,39.4f, 47.4f,40.4f, 44.5f,41.1f, 41.1f,40.8f, 43.7f,40.2f};
     private final float[] regionXY = new float[REGION_LL.length];
     private final Path wall = new Path();
-    private final Path terrainTriangle = new Path();
+    private final Path terrainLight = new Path();
+    private final Path terrainShadow = new Path();
     private final RectF terrainBounds = new RectF();
     private final Paint terrainPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint wallPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -65,6 +66,7 @@ final class MapLayer {
         project(LABEL_LL, this.labelXY);
         project(CITY_LL, this.cityXY);
         project(REGION_LL, this.regionXY);
+        rebuildTerrain();
         float f2 = this.k / 60.0f;
         this.line.setStrokeWidth(Math.max(1.5f, 1.6f * f2));
         this.raidLine.setStrokeWidth(Math.max(1.2f, 1.2f * f2));
@@ -117,30 +119,34 @@ final class MapLayer {
     }
 
     /** Stylised procedural relief; heights are illustrative, not geographic elevations. */
-    void drawTerrain(Canvas canvas, float tiltX, float tiltY) {
+    private void rebuildTerrain() {
+        this.terrainLight.reset(); this.terrainShadow.reset();
         this.core.computeBounds(this.terrainBounds, true);
         float width = this.terrainBounds.width(), height = this.terrainBounds.height();
         if (width <= 0f || height <= 0f) return;
-        canvas.save();
-        canvas.clipPath(this.core);
         float dx = width / 10f, dy = height / 5f;
-        this.terrainPaint.setStyle(Paint.Style.FILL);
         for (int row=0; row<5; row++) {
             for (int col=0; col<10; col++) {
                 float x = this.terrainBounds.left + col*dx, y = this.terrainBounds.top + row*dy;
-                float height3d = (0.15f + ((col*17 + row*23) % 11)/16f) * dy;
-                float peakX = x + dx*(0.35f + (row%3)*0.1f) - tiltX * height3d * 0.15f;
-                float peakY = y + dy*0.35f - height3d * (0.45f + tiltY*0.08f);
-                terrainTriangle.reset(); terrainTriangle.moveTo(x,y+dy); terrainTriangle.lineTo(peakX,peakY);
-                terrainTriangle.lineTo(x+dx,y+dy); terrainTriangle.close();
-                terrainPaint.setColor((this.light & 0x00ffffff) | (26 << 24));
-                canvas.drawPath(terrainTriangle,terrainPaint);
-                terrainTriangle.reset(); terrainTriangle.moveTo(x+dx,y+dy); terrainTriangle.lineTo(peakX,peakY);
-                terrainTriangle.lineTo(x+dx,y+dy*0.55f); terrainTriangle.close();
-                terrainPaint.setColor((this.light & 0x00ffffff) | (42 << 24));
-                canvas.drawPath(terrainTriangle,terrainPaint);
+                float peakHeight = (0.15f + ((col*17 + row*23) % 11)/16f) * dy;
+                float peakX = x + dx*(0.35f + (row%3)*0.1f);
+                float peakY = y + dy*0.35f - peakHeight * 0.45f;
+                this.terrainLight.moveTo(x,y+dy); this.terrainLight.lineTo(peakX,peakY);
+                this.terrainLight.lineTo(x+dx,y+dy); this.terrainLight.close();
+                this.terrainShadow.moveTo(x+dx,y+dy); this.terrainShadow.lineTo(peakX,peakY);
+                this.terrainShadow.lineTo(x+dx,y+dy*0.55f); this.terrainShadow.close();
             }
         }
+    }
+
+    void drawTerrain(Canvas canvas, float tiltX, float tiltY) {
+        canvas.save();
+        canvas.clipPath(this.core);
+        this.terrainPaint.setStyle(Paint.Style.FILL);
+        this.terrainPaint.setColor((this.light & 0x00ffffff) | (26 << 24));
+        canvas.drawPath(this.terrainLight,this.terrainPaint);
+        this.terrainPaint.setColor((this.light & 0x00ffffff) | (42 << 24));
+        canvas.drawPath(this.terrainShadow,this.terrainPaint);
         canvas.restore();
     }
 

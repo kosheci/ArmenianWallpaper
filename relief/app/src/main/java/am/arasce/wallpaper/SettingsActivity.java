@@ -32,6 +32,7 @@ public class SettingsActivity extends Activity {
     private static final int TEXT_DIM = -7566716;
     private SharedPreferences prefs;
     private LinearLayout root;
+    private TextView compassStateView;
     private TextView pendingSection;
     private LocationListener pendingLocation;
 
@@ -145,9 +146,9 @@ public class SettingsActivity extends Activity {
         toggle(heritage, "Праздник Навасард", "Показывать название в первый день традиционного года", "navasard_festival", false);
         toggle(heritage, "Церковные праздники", "Рождество, Тярнындарач, Затик и Вардавар по распространённому календарю", "church_holidays", false);
         toggle(heritage, "Календарь под медальоном", "Выключено — сверху экрана", "calendar_below", false);
-        TextView compassState = text(compassStatusText(), 13, TEXT_DIM);
-        compassState.setPadding(dp(4), dp(6), dp(4), dp(6));
-        heritage.addView(compassState);
+        this.compassStateView = text(compassStatusText(), 13, TEXT_DIM);
+        this.compassStateView.setPadding(dp(4), dp(6), dp(4), dp(6));
+        heritage.addView(this.compassStateView);
         toggle(heritage, "Компас на Арарат", "Нужны компас телефона и недавно обновлённое местоположение", "ararat_compass", false);
         toggle(heritage, "Указатель севера", "Дополнительная метка N рядом со стрелкой Арарата", "north_marker", true);
         Button locate = button("Разрешить и обновить местоположение", false);
@@ -321,6 +322,7 @@ public class SettingsActivity extends Activity {
                     saveAraratLocation(location);
                     Toast.makeText(SettingsActivity.this, "Местоположение обновлено", Toast.LENGTH_SHORT).show();
                     pendingLocation = null;
+                    if (compassStateView != null) compassStateView.setText(compassStatusText());
                 }
                 @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
                 @Override public void onProviderEnabled(String provider) {}
@@ -407,21 +409,23 @@ public class SettingsActivity extends Activity {
         seekBar.setThumbTintList(ColorStateList.valueOf(GOLD));
         seekBar.setProgressBackgroundTintList(ColorStateList.valueOf(-12959926));
         seekBar.setPadding(dp(4), dp(10), dp(4), dp(10));
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { // from class: am.arasce.wallpaper.SettingsActivity.3
-            @Override // android.widget.SeekBar.OnSeekBarChangeListener
-            public void onProgressChanged(SeekBar seekBar2, int i5, boolean z) {
-                textViewText2.setText(i5 + str3);
-                if (z) {
-                    SettingsActivity.this.prefs.edit().putInt(str2, i5).apply();
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            private final boolean expensive = "emblem_size".equals(str2) || "emblem_x".equals(str2) || "emblem_y".equals(str2);
+            private final Runnable savePending = () -> SettingsActivity.this.prefs.edit().putInt(str2, seekBar.getProgress()).apply();
+            @Override public void onProgressChanged(SeekBar seekBar2, int value, boolean fromUser) {
+                textViewText2.setText(value + str3);
+                if (!fromUser) return;
+                if (expensive) {
+                    seekBar2.removeCallbacks(savePending);
+                    seekBar2.postDelayed(savePending, 180L);
+                } else SettingsActivity.this.prefs.edit().putInt(str2, value).apply();
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar2) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar2) {
+                if (expensive) {
+                    seekBar2.removeCallbacks(savePending);
+                    SettingsActivity.this.prefs.edit().putInt(str2, seekBar2.getProgress()).apply();
                 }
-            }
-
-            @Override // android.widget.SeekBar.OnSeekBarChangeListener
-            public void onStartTrackingTouch(SeekBar seekBar2) {
-            }
-
-            @Override // android.widget.SeekBar.OnSeekBarChangeListener
-            public void onStopTrackingTouch(SeekBar seekBar2) {
             }
         });
         linearLayout.addView(seekBar, fullWidth(-2));

@@ -36,6 +36,11 @@ public class ArasceWallpaperService extends WallpaperService {
         private final float[] orientation = new float[3];
         private long fpsStartMs = 0L;
         private int fpsFrames = 0;
+        private final float[] compassBearingResult = new float[3];
+        private float cachedLat = Float.NaN, cachedLon = Float.NaN;
+        private float cachedAraratBearing, cachedDeclination;
+        private long cachedBearingAt = 0L, environmentCheckedAt = 0L;
+        private boolean cachedEconomy = false;
         private boolean baseSet;
         private float baseX;
         private float baseY;
@@ -145,6 +150,7 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.raysOn = this.effectsEnabled && this.prefs.getBoolean("rays", false);
             this.renderer.nebulaOn = this.effectsEnabled && this.prefs.getBoolean("nebula", true);
             this.renderer.mapOn = this.prefs.getBoolean("map", true);
+            if (!this.renderer.mapOn) this.holdReveal = false;
             this.renderer.terrainOn = this.prefs.getBoolean("map_terrain", true);
             this.renderer.mapZoom = this.prefs.getInt("map_zoom", 100) / 100f;
             this.renderer.mapShiftX = (this.prefs.getInt("map_x", 50) - 50) / 100f;
@@ -158,6 +164,7 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.calendarPosition = this.prefs.getBoolean("calendar_below", false) ? 1 : 0;
             this.renderer.setLayout(this.prefs.getInt("emblem_size", 100) / 100f, this.prefs.getInt("emblem_x", 50) / 100f, this.prefs.getInt("emblem_y", 56) / 100f);
             this.autoEnergy = this.prefs.getBoolean("auto_energy", true);
+            this.environmentCheckedAt = 0L;
             this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", true);
             this.renderer.mountainOn = this.prefs.getBoolean("ararat_mountain", true);
             this.renderer.letterHaloOn = this.prefs.getBoolean("letter_halo", false);
@@ -167,7 +174,10 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.fpsOn = this.prefs.getBoolean("fps_display", false);
             this.renderer.mapTouchOn = this.prefs.getBoolean("map_touch", true);
             this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
-            if (!this.renderer.compassOn) this.renderer.compassReady = false;
+            if (!this.renderer.compassOn) {
+                this.renderer.compassReady = false;
+                if (this.rotationSensor != null) this.sensorManager.unregisterListener(this, this.rotationSensor);
+            }
             this.renderer.compassStatus = this.rotationSensor == null ? "датчик недоступен" : "обновите местоположение";
             if (this.visibleNow && this.renderer.compassOn && this.rotationSensor != null) this.sensorManager.registerListener(this, this.rotationSensor, SensorManager.SENSOR_DELAY_UI);
             this.renderer.perspectiveOn = this.effectsEnabled && this.prefs.getBoolean("perspective", true);
@@ -221,6 +231,9 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.baseSet = false;
                 this.lastPaletteT = -100.0f;
                 this.lastFrameT = -1.0f;
+                this.fpsStartMs = 0L;
+                this.fpsFrames = 0;
+                this.environmentCheckedAt = 0L;
                 this.choreographer.removeFrameCallback(this.frame);
                 this.choreographer.postFrameCallback(this.frame);
                 return;
@@ -364,8 +377,13 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.renderer.compassReady = false; return;
             }
             float lat = this.prefs.getFloat("ararat_lat", 0f), lon = this.prefs.getFloat("ararat_lon", 0f);
-            float[] result = new float[3];
-            Location.distanceBetween(lat, lon, 39.70194, 44.29833, result);
+            long nowMs = System.currentTimeMillis();
+            if (lat != this.cachedLat || lon != this.cachedLon || nowMs - this.cachedBearingAt > 60000L) {
+                Location.distanceBetween(lat, lon, 39.70194, 44.29833, this.compassBearingResult);
+                this.cachedAraratBearing = this.compassBearingResult[1];
+                this.cachedDeclination = new GeomagneticField(lat, lon, 0f, nowMs).getDeclination();
+                this.cachedLat = lat; this.cachedLon = lon; this.cachedBearingAt = nowMs;
+            }
             SensorManager.getRotationMatrixFromVector(this.rotationMatrix, event.values);
             int rotation = ((WindowManager) ArasceWallpaperService.this.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
             int axisX = SensorManager.AXIS_X, axisY = SensorManager.AXIS_Y;
@@ -376,9 +394,8 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.renderer.compassReady = false; return;
             }
             SensorManager.getOrientation(this.remappedMatrix, this.orientation);
-            GeomagneticField field = new GeomagneticField(lat, lon, 0f, System.currentTimeMillis());
-            float trueHeading = (float)Math.toDegrees(this.orientation[0]) + field.getDeclination();
-            this.renderer.compassAngle = result[1] - trueHeading;
+            float trueHeading = (float)Math.toDegrees(this.orientation[0]) + this.cachedDeclination;
+            this.renderer.compassAngle = this.cachedAraratBearing - trueHeading;
             this.renderer.northAngle = -trueHeading;
             this.renderer.compassReady = true;
         }
@@ -404,11 +421,14 @@ public class ArasceWallpaperService extends WallpaperService {
         /* JADX INFO: Access modifiers changed from: private */
         public void drawFrame() {
             long wall = SystemClock.elapsedRealtime();
-            android.os.PowerManager power = (android.os.PowerManager) ArasceWallpaperService.this.getSystemService(Context.POWER_SERVICE);
-            int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
-            this.renderer.quietActive = this.effectsEnabled && ((this.prefs.getBoolean("quiet_night", false) && (hour >= 22 || hour < 7)) || (isLockOnly() && this.prefs.getBoolean("lock_quiet", false)));
-            boolean economy = this.renderer.quietActive || (this.autoEnergy && ((power != null && power.isPowerSaveMode()) || (this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20)));
-            if (economy && wall - this.lastEnergyFrame < 33) {
+            if (this.environmentCheckedAt == 0L || wall - this.environmentCheckedAt >= 1000L) {
+                android.os.PowerManager power = (android.os.PowerManager) ArasceWallpaperService.this.getSystemService(Context.POWER_SERVICE);
+                int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+                this.renderer.quietActive = this.effectsEnabled && ((this.prefs.getBoolean("quiet_night", false) && (hour >= 22 || hour < 7)) || (isLockOnly() && this.prefs.getBoolean("lock_quiet", false)));
+                this.cachedEconomy = this.renderer.quietActive || (this.autoEnergy && ((power != null && power.isPowerSaveMode()) || (this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20)));
+                this.environmentCheckedAt = wall;
+            }
+            if (this.cachedEconomy && wall - this.lastEnergyFrame < 33) {
                 if (this.visibleNow) this.choreographer.postFrameCallback(this.frame);
                 return;
             }
