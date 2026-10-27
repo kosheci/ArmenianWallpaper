@@ -145,6 +145,7 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.raysOn = this.effectsEnabled && this.prefs.getBoolean("rays", false);
             this.renderer.nebulaOn = this.effectsEnabled && this.prefs.getBoolean("nebula", true);
             this.renderer.mapOn = this.prefs.getBoolean("map", true);
+            this.renderer.terrainOn = this.prefs.getBoolean("map_terrain", true);
             this.renderer.mapZoom = this.prefs.getInt("map_zoom", 100) / 100f;
             this.renderer.mapShiftX = (this.prefs.getInt("map_x", 50) - 50) / 100f;
             this.renderer.mapShiftY = (this.prefs.getInt("map_y", 50) - 50) / 100f;

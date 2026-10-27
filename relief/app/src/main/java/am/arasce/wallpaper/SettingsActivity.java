@@ -32,6 +32,7 @@ public class SettingsActivity extends Activity {
     private static final int TEXT_DIM = -7566716;
     private SharedPreferences prefs;
     private LinearLayout root;
+    private TextView pendingSection;
     private LocationListener pendingLocation;
 
     @Override // android.app.Activity
@@ -163,6 +164,10 @@ public class SettingsActivity extends Activity {
         toggle(linearLayoutCard3, "Туманность", "Глубокие облака синего, фиолетового и бирюзового на фоне", "nebula", true);
         toggle(linearLayoutCard3, "Силуэт Арарата", "Горизонтальный силуэт меняет яркость в течение суток", "ararat_mountain", true);
         toggle(linearLayoutCard3, "Касания карты", "Коснитесь точки города или одного из 15 условных регионов", "map_touch", true);
+        toggle(linearLayoutCard3, "Горный рельеф", "Художественные горы: не реальные высоты", "map_terrain", true);
+        Button gavarCatalog = button("Справочник областей и гаваров", false);
+        gavarCatalog.setOnClickListener(v -> showGavarCatalog());
+        linearLayoutCard3.addView(gavarCatalog, fullWidth(dp(52)));
         slider(linearLayoutCard3, "Увеличение карты", "map_zoom", 100, 100, 250, "%");
         slider(linearLayoutCard3, "Сдвиг карты по горизонтали", "map_x", 50, 10, 90, "%");
         slider(linearLayoutCard3, "Сдвиг карты по вертикали", "map_y", 50, 10, 90, "%");
@@ -209,7 +214,7 @@ public class SettingsActivity extends Activity {
     private static final String[] STYLE_KEYS = {"effects_enabled","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
         "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
         "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
-        "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","map_zoom","map_x","map_y","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};
+        "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","map_terrain","map_zoom","map_x","map_y","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};
     private void saveMyStyle() {
         try {
             org.json.JSONObject data = new org.json.JSONObject();
@@ -237,6 +242,20 @@ public class SettingsActivity extends Activity {
         } catch (org.json.JSONException e) {
             Toast.makeText(this, "Не удалось восстановить стиль", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showGavarCatalog() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Выберите область · условная схема")
+            .setItems(GavarCatalog.REGIONS, (dialog, which) -> {
+                String[] names = GavarCatalog.GAVARS[which].split(", ");
+                StringBuilder message = new StringBuilder("Названия по одному из традиционных перечней; написание и состав могут различаться. Положение на карте условное.\n\n");
+                for (int i = 0; i < names.length; i++) message.append(i + 1).append(". ").append(names[i]).append("\n");
+                message.append("\nИсточник: the-armenian-highland.org — Ашхарацуйц");
+                new android.app.AlertDialog.Builder(this).setTitle(GavarCatalog.REGIONS[which])
+                    .setMessage(message.toString()).setPositiveButton("Закрыть", null).show();
+            })
+            .setNegativeButton("Закрыть", null).show();
     }
 
     private void applyPreset(boolean expressive) {
@@ -336,10 +355,13 @@ public class SettingsActivity extends Activity {
     }
 
     private void section(String str) {
-        TextView textViewText = text(str.toUpperCase(), 12, GOLD_DIM);
-        textViewText.setLetterSpacing(0.15f);
-        textViewText.setPadding(dp(4), dp(24), 0, dp(8));
-        this.root.addView(textViewText);
+        TextView heading = text(str.toUpperCase() + "  ▾", 12, GOLD_DIM);
+        heading.setLetterSpacing(0.15f);
+        heading.setPadding(dp(4), dp(24), 0, dp(8));
+        heading.setFocusable(true);
+        heading.setContentDescription(str + ": свернуть раздел");
+        this.root.addView(heading);
+        this.pendingSection = heading;
     }
 
     private LinearLayout card() {
@@ -352,6 +374,17 @@ public class SettingsActivity extends Activity {
         gradientDrawable.setStroke(dp(1), 869839459);
         linearLayout.setBackground(gradientDrawable);
         this.root.addView(linearLayout, fullWidth(-2));
+        final TextView heading = this.pendingSection;
+        if (heading != null) {
+            final String label = heading.getText().toString().replace("  ▾", "");
+            heading.setOnClickListener(v -> {
+                boolean visible = linearLayout.getVisibility() == View.VISIBLE;
+                linearLayout.setVisibility(visible ? View.GONE : View.VISIBLE);
+                heading.setText(label + (visible ? "  ▸" : "  ▾"));
+                heading.setContentDescription(label + (visible ? ": развернуть раздел" : ": свернуть раздел"));
+            });
+            this.pendingSection = null;
+        }
         return linearLayout;
     }
 

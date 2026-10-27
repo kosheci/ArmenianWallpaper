@@ -58,6 +58,7 @@ final class ArasceRenderer {
     boolean raysOn = true;
     boolean nebulaOn = true;
     boolean mapOn = true;
+    boolean terrainOn = true;
     float mapZoom = 1f, mapShiftX = 0f, mapShiftY = 0f;
     boolean effectsOn = true;
     boolean sparkleOn = true;
@@ -68,6 +69,7 @@ final class ArasceRenderer {
     private String churchHolidayText = "";
     float northAngle = 0f;
     private String selectedMapCity = "";
+    private int selectedGavarPage = 0;
     private float selectedUntil = -100f;
     private final Paint mountainPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path mountainPath = new Path();
@@ -576,6 +578,7 @@ final class ArasceRenderer {
                 canvas.restore();
                 this.map.setColors(this.palette.lit, this.palette.light);
                 this.map.drawRelief(canvas, f6, f7, this.s);
+                if (this.terrainOn) this.map.drawTerrain(canvas, f6, f7);
                 this.map.drawLines(canvas, 1f, fSin);
                 this.map.drawLabels(canvas, 1f);
                 canvas.restore();
@@ -710,10 +713,33 @@ final class ArasceRenderer {
             canvas.drawRect(0.0f, 0.0f, this.w, this.h, this.vignettePaint);
             drawInfo(canvas);
             if (this.mapTouchOn && f4 > 0.97f && f < this.selectedUntil && !this.selectedMapCity.isEmpty()) {
-                this.infoPaint.setTextAlign(Paint.Align.CENTER); this.infoPaint.setTypeface(Typeface.create("serif", Typeface.BOLD));
-                this.infoPaint.setTextSize(Math.max(18f, this.w * 0.038f)); this.infoPaint.setColor(this.palette.light); this.infoPaint.setAlpha(240);
+                int regionIndex = GavarCatalog.regionIndex(this.selectedMapCity);
+                this.infoPaint.setTextAlign(Paint.Align.CENTER);
+                this.infoPaint.setTypeface(Typeface.create("serif", Typeface.BOLD));
+                this.infoPaint.setColor(this.palette.light);
                 this.infoPaint.setShadowLayer(5f, 0f, 1f, 0xff000000);
-                canvas.drawText(this.selectedMapCity, this.cx, Math.min(this.h * 0.8f, this.cy + this.s * 390f), this.infoPaint);
+                if (regionIndex >= 0) {
+                    String[] names = GavarCatalog.GAVAR_ARRAYS[regionIndex];
+                    int pages = (names.length + 4) / 5;
+                    float font = Math.max(15f, this.w * 0.028f), line = font * 1.32f;
+                    float top = this.h * 0.64f;
+                    this.flipPaint.setShader(null); this.flipPaint.setStyle(Paint.Style.FILL);
+                    this.flipPaint.setColor(0xff08090b); this.flipPaint.setAlpha(220);
+                    canvas.drawRoundRect(this.w*0.06f, top, this.w*0.94f, top + line*8f, 14f, 14f, this.flipPaint);
+                    this.infoPaint.setTextSize(font * 1.08f); this.infoPaint.setAlpha(245);
+                    canvas.drawText(GavarCatalog.REGIONS[regionIndex] + " · условно", this.w*0.5f, top + line, this.infoPaint);
+                    this.infoPaint.setTypeface(Typeface.create("serif", Typeface.NORMAL));
+                    this.infoPaint.setTextSize(font); this.infoPaint.setAlpha(225);
+                    for (int i=0; i<5; i++) {
+                        int n = this.selectedGavarPage * 5 + i;
+                        if (n < names.length) canvas.drawText((n+1) + ". " + names[n], this.w*0.5f, top + line*(2+i), this.infoPaint);
+                    }
+                    this.infoPaint.setTextSize(font * 0.78f); this.infoPaint.setAlpha(175);
+                    canvas.drawText("Стр. " + (this.selectedGavarPage+1) + "/" + pages + " · нажмите точку снова", this.w*0.5f, top + line*7.35f, this.infoPaint);
+                } else {
+                    this.infoPaint.setTextSize(Math.max(18f, this.w * 0.038f)); this.infoPaint.setAlpha(240);
+                    canvas.drawText(this.selectedMapCity, this.cx, Math.min(this.h * 0.8f, this.cy + this.s * 390f), this.infoPaint);
+                }
                 this.infoPaint.clearShadowLayer();
             }
             if (this.effectsOn && f - this.wakeAt >= 0f && f - this.wakeAt < 0.9f) {
@@ -814,8 +840,14 @@ final class ArasceRenderer {
             Matrix inverse = new Matrix();
             if (this.perspectiveMatrix.invert(inverse)) inverse.mapPoints(point);
         }
-        this.selectedMapCity = this.map.findCity(point[0], point[1], this.mapZoom);
-        this.selectedUntil = time + 3.5f;
+        String selected = this.map.findCity(point[0], point[1], this.mapZoom);
+        int region = GavarCatalog.regionIndex(selected);
+        if (region >= 0 && selected.equals(this.selectedMapCity) && time < this.selectedUntil) {
+            int pages = (GavarCatalog.GAVAR_ARRAYS[region].length + 4) / 5;
+            this.selectedGavarPage = (this.selectedGavarPage + 1) % pages;
+        } else this.selectedGavarPage = 0;
+        this.selectedMapCity = selected;
+        this.selectedUntil = time + (region >= 0 ? 12f : 3.5f);
     }
 
     private void drawInfo(Canvas canvas) {
