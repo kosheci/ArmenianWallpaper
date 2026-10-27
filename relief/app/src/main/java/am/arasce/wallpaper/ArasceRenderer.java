@@ -47,7 +47,7 @@ final class ArasceRenderer {
     private float sheenOffset;
     private final Bitmap sparkle;
     float spin;
-    private final String text;
+    private String text;
     private final Paint textSheen;
     private float w;
     float parallaxMul = 1.0f;
@@ -59,7 +59,7 @@ final class ArasceRenderer {
     boolean nebulaOn = true;
     boolean mapOn = true;
     boolean terrainOn = true;
-    boolean metalDepthOn = true, flipDepthOn = true;
+    boolean metalDepthOn = true, flipDepthOn = true, inscriptionOn = true;
     float mapZoom = 1f, mapShiftX = 0f, mapShiftY = 0f;
     boolean effectsOn = true;
     boolean sparkleOn = true;
@@ -267,6 +267,30 @@ final class ArasceRenderer {
             this.rays.lineTo(420.0f * ((float) Math.cos((radians6 * 2.2d) + radians5)), 420.0f * ((float) Math.sin((radians6 * 2.2d) + radians5)));
             this.rays.lineTo(((float) Math.cos(radians5 + radians6)) * 30.0f, ((float) Math.sin(radians5 + radians6)) * 30.0f);
             this.rays.close();
+        }
+    }
+
+    void setInscription(String phrase) {
+        if (phrase == null) phrase = "Աստուած արասցէ";
+        phrase = phrase.trim();
+        if (phrase.length() > 64) phrase = phrase.substring(0, 64);
+        String unit = phrase.isEmpty() ? "" : phrase + " • ";
+        this.textPaint.setLetterSpacing(0f);
+        float width = unit.isEmpty() ? 0f : this.textPaint.measureText(unit);
+        int count = width > 0 ? Math.max(1, Math.min(40, Math.round(1539.3804f / width))) : 0;
+        if (count > 0) this.textPaint.setLetterSpacing((((1539.3804f / count) - width) / unit.length()) / this.textPaint.getTextSize());
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i<count; i++) sb.append(unit);
+        String updated = sb.toString();
+        this.textSheen.setLetterSpacing(this.textPaint.getLetterSpacing());
+        if (updated.equals(this.text)) return;
+        this.text = updated;
+        if (this.w > 0 && this.h > 0) {
+            recycle(this.glowText);
+            this.glowText = null;
+            if (!updated.isEmpty()) {
+                try { this.glowText = bakeLayer(4, 272.0f); } catch (OutOfMemoryError ignored) {}
+            }
         }
     }
 
@@ -627,7 +651,7 @@ final class ArasceRenderer {
             float f11 = (this.rotTime * 2.0f) + (this.spin * BAKE);
             float fMax2 = Math.max(this.ambientBase * (1.0f + (0.3f * ((float) Math.sin(0.6f * f)))), inscription);
             layer(canvas, f6, f7, 0.6f);
-            if (this.glowText != null && fMax2 > 0.02f) {
+            if (this.inscriptionOn && this.glowText != null && fMax2 > 0.02f) {
                 canvas.save();
                 canvas.rotate(f11);
                 this.textGlowPaint.setAlpha(clamp((int) ((120.0f * inscription) + (65.0f * fMax2))));
@@ -636,7 +660,7 @@ final class ArasceRenderer {
             }
             canvas.rotate(f11);
             // Draw an embossed edge behind the inscription before its lit face.
-            if (this.perspectiveOn) {
+            if (this.inscriptionOn && this.perspectiveOn) {
                 this.textPaint.setColor(this.palette.dark);
                 for (int depth = 5; depth >= 1; depth--) {
                     canvas.save();
@@ -646,12 +670,12 @@ final class ArasceRenderer {
                 }
             }
             this.textPaint.setColor(this.textRest);
-            canvas.drawTextOnPath(this.text, this.textCircle, 0.0f, 0.0f, this.textPaint);
+            if (this.inscriptionOn) canvas.drawTextOnPath(this.text, this.textCircle, 0.0f, 0.0f, this.textPaint);
             applySheen(f11);
             this.textSheen.setShader(this.sheenOn ? this.metal : null);
             this.textSheen.setColor(this.textLit);
             this.textSheen.setAlpha(clamp((int) (255.0f * fMax2)));
-            canvas.drawTextOnPath(this.text, this.textCircle, 0.0f, 0.0f, this.textSheen);
+            if (this.inscriptionOn) canvas.drawTextOnPath(this.text, this.textCircle, 0.0f, 0.0f, this.textSheen);
             canvas.restore();
             float f12 = (this.rotTime * NEB) + (this.spin * 0.8f);
             layer(canvas, f6, f7, 0.8f);

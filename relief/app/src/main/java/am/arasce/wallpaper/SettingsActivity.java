@@ -114,8 +114,18 @@ public class SettingsActivity extends Activity {
         Button economy = button("Экономия эффектов", false);
         economy.setOnClickListener(v -> { prefs.edit().putBoolean("auto_energy", true).putInt("motes", 10).putInt("matrix_density", 40).apply(); build(); });
         performance.addView(economy, fullWidth(dp(48)));
+        Button exportButton = button("Экспорт настроек", false);
+        exportButton.setOnClickListener(v -> exportSettings());
+        presets.addView(exportButton, fullWidth(dp(48)));
+        Button importButton = button("Импорт настроек", false);
+        importButton.setOnClickListener(v -> importSettings());
+        presets.addView(importButton, fullWidth(dp(48)));
         section("Композиция");
         LinearLayout layout = card();
+        Button inscription = button("Своя надпись по кругу", false);
+        inscription.setOnClickListener(v -> editInscription());
+        layout.addView(inscription, fullWidth(dp(48)));
+        toggle(layout, "Показывать надпись", "Можно скрыть текст на кольце", "inscription_on", true);
         slider(layout, "Размер медальона", "emblem_size", 100, 60, 120, "%");
         slider(layout, "Положение по горизонтали", "emblem_x", 50, 25, 75, "%");
         slider(layout, "Положение по вертикали", "emblem_y", 56, 30, 75, "%");
@@ -234,7 +244,7 @@ public class SettingsActivity extends Activity {
         build();
     }
 
-    private static final String[] STYLE_KEYS = {"effects_enabled","clean_mode","rain_depth","compass_x","compass_y","compass_size","info_size","metal_depth","flip_depth","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
+    private static final String[] STYLE_KEYS = {"inscription_text","inscription_on","effects_enabled","clean_mode","rain_depth","compass_x","compass_y","compass_size","info_size","metal_depth","flip_depth","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
         "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
         "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
         "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","map_terrain","map_zoom","map_x","map_y","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};
@@ -262,10 +272,107 @@ public class SettingsActivity extends Activity {
                 Object value = data.get(key);
                 if (value instanceof Boolean) e.putBoolean(key, (Boolean)value);
                 else if (value instanceof Number) e.putInt(key, ((Number)value).intValue());
+                else if (value instanceof String) e.putString(key, (String)value);
             }
             e.apply(); build(); Toast.makeText(this, "Ваш стиль восстановлен", Toast.LENGTH_SHORT).show();
         } catch (org.json.JSONException e) {
             Toast.makeText(this, "Не удалось восстановить стиль", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void editInscription() {
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setSingleLine(true);
+        input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(64)});
+        input.setText(prefs.getString("inscription_text", "Աստուած արասցէ"));
+        new android.app.AlertDialog.Builder(this).setTitle("Надпись по кругу")
+            .setView(input).setPositiveButton("Сохранить", (d, w) ->
+                prefs.edit().putString("inscription_text", input.getText().toString().trim()).apply())
+            .setNegativeButton("Отмена", null).show();
+    }
+
+    private static final java.util.Set<String> BOOL_KEYS = new java.util.HashSet<>(java.util.Arrays.asList("inscription_on","clean_mode","effects_enabled","metal_depth","flip_depth","sparkle_enabled","ripples_enabled","wake_fade","auto_energy","quiet_night","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar","perspective","daycycle","matrix_on","rain_depth","letter_halo","matrix_ordered","armenian_calendar","navasard_festival","church_holidays","calendar_below","ararat_compass","north_marker","celestial","battery","sheen","rays","nebula","ararat_mountain","map_touch","map_terrain","map","gestures","unlock"));
+    private static final java.util.Set<String> INT_KEYS = new java.util.HashSet<>(java.util.Arrays.asList("emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","matrix_intensity","matrix_density","matrix_speed","matrix_size","compass_x","compass_y","compass_size","info_size","map_zoom","map_x","map_y"));
+    private boolean validImportedValue(String key, Object value) {
+        if ("inscription_text".equals(key)) return value instanceof String && ((String)value).length() <= 64;
+        if (BOOL_KEYS.contains(key)) return value instanceof Boolean;
+        if (INT_KEYS.contains(key)) return value instanceof Number && ((Number)value).doubleValue() >= 0 && ((Number)value).doubleValue() <= 300 && ((Number)value).doubleValue() == ((Number)value).intValue();
+        return false;
+    }
+
+    private void exportSettings() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, "Astuats-Arasce-settings.json");
+        startActivityForResult(intent, 731);
+    }
+
+    private void importSettings() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("application/json");
+        startActivityForResult(intent, 732);
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        try {
+            if (requestCode == 731) {
+                org.json.JSONObject out = new org.json.JSONObject();
+                out.put("format", "arasce-settings-1");
+                org.json.JSONObject values = new org.json.JSONObject();
+                java.util.Map<String, ?> current = prefs.getAll();
+                for (String key : STYLE_KEYS) if (current.containsKey(key)) values.put(key, current.get(key));
+                for (int i = 0; i < 3; i++) {
+                    String key = "user_style_slot_" + i;
+                    if (current.containsKey(key)) values.put(key, current.get(key));
+                }
+                out.put("settings", values);
+                try (java.io.OutputStream stream = getContentResolver().openOutputStream(data.getData())) {
+                    if (stream == null) throw new java.io.IOException("No output");
+                    stream.write(out.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+                Toast.makeText(this, "Настройки сохранены в файл", Toast.LENGTH_LONG).show();
+            } else if (requestCode == 732) {
+                byte[] bytes;
+                try (java.io.InputStream stream = getContentResolver().openInputStream(data.getData());
+                     java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+                    if (stream == null) throw new java.io.IOException("No input");
+                    byte[] buffer = new byte[4096]; int n;
+                    while ((n = stream.read(buffer)) != -1) {
+                        if (out.size() + n > 65536) throw new java.io.IOException("File too large");
+                        out.write(buffer, 0, n);
+                    }
+                    bytes = out.toByteArray();
+                }
+                org.json.JSONObject doc = new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+                if (!"arasce-settings-1".equals(doc.optString("format"))) throw new org.json.JSONException("Unknown format");
+                org.json.JSONObject values = doc.getJSONObject("settings");
+                android.content.SharedPreferences.Editor editor = prefs.edit();
+                for (String key : STYLE_KEYS) {
+                    if (!values.has(key)) continue;
+                    Object value = values.get(key);
+                    if (!validImportedValue(key, value)) throw new org.json.JSONException("Invalid setting");
+                    if (value instanceof Boolean) editor.putBoolean(key, (Boolean) value);
+                    else if (value instanceof Number && ((Number)value).intValue() >= 0 && ((Number)value).intValue() <= 300)
+                        editor.putInt(key, ((Number)value).intValue());
+                    else if ("inscription_text".equals(key) && value instanceof String && ((String)value).length() <= 64)
+                        editor.putString(key, (String)value);
+                }
+                for (int i = 0; i < 3; i++) {
+                    String key = "user_style_slot_" + i;
+                    if (values.opt(key) instanceof String && values.getString(key).length() <= 8192) {
+                        org.json.JSONObject profile = new org.json.JSONObject(values.getString(key));
+                        for (String setting : STYLE_KEYS) if (profile.has(setting) && !validImportedValue(setting, profile.get(setting)))
+                            throw new org.json.JSONException("Invalid profile");
+                        editor.putString(key, values.getString(key));
+                    }
+                }
+                editor.apply(); build();
+                Toast.makeText(this, "Настройки импортированы", Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Не удалось обработать файл настроек", Toast.LENGTH_LONG).show();
         }
     }
 

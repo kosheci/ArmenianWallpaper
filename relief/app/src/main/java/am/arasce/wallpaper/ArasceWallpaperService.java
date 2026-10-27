@@ -142,6 +142,8 @@ public class ArasceWallpaperService extends WallpaperService {
             this.effectsEnabled = this.prefs.getBoolean("effects_enabled", true);
             this.ripplesEnabled = this.effectsEnabled && this.prefs.getBoolean("ripples_enabled", true);
             this.renderer.effectsOn = this.effectsEnabled;
+            this.renderer.inscriptionOn = this.prefs.getBoolean("inscription_on", true);
+            this.renderer.setInscription(this.prefs.getString("inscription_text", "Աստուած արասցէ"));
             this.renderer.sparkleOn = this.prefs.getBoolean("sparkle_enabled", true);
             this.renderer.parallaxMul = this.effectsEnabled ? this.prefs.getInt("parallax", 70) / 100.0f : 0f;
             this.renderer.speedMul = this.effectsEnabled ? this.prefs.getInt("speed", 65) / 100.0f : 0f;
