@@ -58,6 +58,8 @@ final class ArasceRenderer {
     boolean raysOn = true;
     boolean nebulaOn = true;
     boolean mapOn = true;
+    boolean effectsOn = true;
+    boolean sparkleOn = true;
     boolean matrixOn = true;
     int matrixIntensity = 55;
     private final Paint matrixPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -519,7 +521,7 @@ final class ArasceRenderer {
             float f7 = f3 * this.parallaxMul;
             float f8 = this.parallax;
             float fMax = Math.max(f4, this.flare);
-            float fSin = BAKE + (BAKE * ((float) Math.sin(1.2f * f)));
+            float fSin = this.effectsOn ? BAKE + (BAKE * ((float) Math.sin(1.2f * f))) : 0f;
             this.sheenAngle = 35.0f + (55.0f * f6);
             this.sheenOffset = (260.0f * f7) + (((float) Math.sin(0.15f * f)) * 80.0f);
             canvas.save();
@@ -634,7 +636,7 @@ final class ArasceRenderer {
             float f16 = (90.0f + (40.0f * fSin) + (170.0f * fMax)) * this.s * BAKE;
             this.sparklePaint.setAlpha(clamp((int) ((0.12f + (0.12f * fSin) + (0.26f * fMax)) * 255.0f)));
             this.tmpRect.set(f14 - f16, f15 - f16, f14 + f16, f15 + f16);
-            if (f4 < 0.5f) canvas.drawBitmap(this.sparkle, (Rect) null, this.tmpRect, this.sparklePaint);
+            if (this.effectsOn && this.sparkleOn && f4 < 0.5f) canvas.drawBitmap(this.sparkle, (Rect) null, this.tmpRect, this.sparklePaint);
             for (int i = 0; i < MAX_RIPPLES; i++) {
                 float f17 = f - this.rt[i];
                 if (f17 >= 0.0f && f17 <= RIPPLE_LIFE) {

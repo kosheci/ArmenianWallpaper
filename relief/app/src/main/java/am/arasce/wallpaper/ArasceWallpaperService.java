@@ -15,8 +15,8 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+import android.view.Choreographer;
+import android.os.Build;
 import android.os.SystemClock;
 import android.service.wallpaper.WallpaperService;
 import android.view.MotionEvent;
@@ -42,11 +42,13 @@ public class ArasceWallpaperService extends WallpaperService {
         private float downY;
         private boolean dragging;
         private float flare;
-        private final Runnable frame;
+        private final Choreographer.FrameCallback frame;
         private boolean gestures;
+        private boolean effectsEnabled = true;
+        private boolean ripplesEnabled = true;
         private volatile float gx;
         private volatile float gy;
-        private final Handler handler;
+        private final Choreographer choreographer;
         private volatile boolean hasReading;
         private boolean holdReveal;
         private float lastAngle;
@@ -77,13 +79,8 @@ public class ArasceWallpaperService extends WallpaperService {
         ArasceEngine() {
             super();
             this.renderer = new ArasceRenderer();
-            this.handler = new Handler(Looper.getMainLooper());
-            this.frame = new Runnable() { // from class: am.arasce.wallpaper.ArasceWallpaperService.ArasceEngine.1
-                @Override // java.lang.Runnable
-                public void run() {
-                    ArasceEngine.this.drawFrame();
-                }
-            };
+            this.choreographer = Choreographer.getInstance();
+            this.frame = frameTimeNanos -> ArasceEngine.this.drawFrame();
             this.t0 = SystemClock.elapsedRealtime();
             this.lastFrameT = -1.0f;
             this.gestures = true;
@@ -95,12 +92,12 @@ public class ArasceWallpaperService extends WallpaperService {
             this.unlockReceiver = new BroadcastReceiver() { // from class: am.arasce.wallpaper.ArasceWallpaperService.ArasceEngine.2
                 @Override // android.content.BroadcastReceiver
                 public void onReceive(Context context, Intent intent) {
-                    if (ArasceEngine.this.unlockFlash) {
+                    if (ArasceEngine.this.unlockFlash && ArasceEngine.this.effectsEnabled) {
                         float fNow = ArasceEngine.this.now();
                         ArasceEngine.this.flare = 1.0f;
                         ArasceEngine.this.touchAt = fNow;
-                        ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow);
-                        ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow + 0.25f);
+                        if (ArasceEngine.this.ripplesEnabled) ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow);
+                        if (ArasceEngine.this.ripplesEnabled) ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow + 0.25f);
                     }
                 }
             };
@@ -130,23 +127,27 @@ public class ArasceWallpaperService extends WallpaperService {
         }
 
         private void applySettings() {
-            this.renderer.parallaxMul = this.prefs.getInt("parallax", 70) / 100.0f;
-            this.renderer.speedMul = this.prefs.getInt("speed", 65) / 100.0f;
-            this.renderer.ambientBase = this.prefs.getInt("glow", 18) / 100.0f;
-            this.renderer.moteCount = this.prefs.getInt("motes", 40);
-            this.renderer.sheenOn = this.prefs.getBoolean("sheen", true);
-            this.renderer.raysOn = this.prefs.getBoolean("rays", false);
-            this.renderer.nebulaOn = this.prefs.getBoolean("nebula", true);
+            this.effectsEnabled = this.prefs.getBoolean("effects_enabled", true);
+            this.ripplesEnabled = this.effectsEnabled && this.prefs.getBoolean("ripples_enabled", true);
+            this.renderer.effectsOn = this.effectsEnabled;
+            this.renderer.sparkleOn = this.prefs.getBoolean("sparkle_enabled", true);
+            this.renderer.parallaxMul = this.effectsEnabled ? this.prefs.getInt("parallax", 70) / 100.0f : 0f;
+            this.renderer.speedMul = this.effectsEnabled ? this.prefs.getInt("speed", 65) / 100.0f : 0f;
+            this.renderer.ambientBase = this.effectsEnabled ? this.prefs.getInt("glow", 18) / 100.0f : 0f;
+            this.renderer.moteCount = this.effectsEnabled ? this.prefs.getInt("motes", 40) : 0;
+            this.renderer.sheenOn = this.effectsEnabled && this.prefs.getBoolean("sheen", true);
+            this.renderer.raysOn = this.effectsEnabled && this.prefs.getBoolean("rays", false);
+            this.renderer.nebulaOn = this.effectsEnabled && this.prefs.getBoolean("nebula", true);
             this.renderer.mapOn = this.prefs.getBoolean("map", true);
-            this.renderer.matrixOn = this.prefs.getBoolean("matrix_on", true);
+            this.renderer.matrixOn = this.effectsEnabled && this.prefs.getBoolean("matrix_on", true);
             this.renderer.matrixIntensity = this.prefs.getInt("matrix_intensity", 55);
             this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", true);
             this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
             if (!this.renderer.compassOn) this.renderer.compassReady = false;
             this.renderer.compassStatus = this.rotationSensor == null ? "датчик недоступен" : "обновите местоположение";
             if (this.visibleNow && this.renderer.compassOn && this.rotationSensor != null) this.sensorManager.registerListener(this, this.rotationSensor, SensorManager.SENSOR_DELAY_UI);
-            this.renderer.perspectiveOn = this.prefs.getBoolean("perspective", true);
-            this.renderer.celestialOn = this.prefs.getBoolean("celestial", true);
+            this.renderer.perspectiveOn = this.effectsEnabled && this.prefs.getBoolean("perspective", true);
+            this.renderer.celestialOn = this.effectsEnabled && this.prefs.getBoolean("celestial", true);
             this.renderer.batteryOn = this.prefs.getBoolean("battery", true);
             updateBattery();
             this.gestures = this.prefs.getBoolean("gestures", true);
@@ -179,8 +180,8 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.baseSet = false;
                 this.lastPaletteT = -100.0f;
                 this.lastFrameT = -1.0f;
-                this.handler.removeCallbacks(this.frame);
-                this.handler.post(this.frame);
+                this.choreographer.removeFrameCallback(this.frame);
+                this.choreographer.postFrameCallback(this.frame);
                 return;
             }
             stop();
@@ -190,9 +191,13 @@ public class ArasceWallpaperService extends WallpaperService {
         public void onSurfaceChanged(SurfaceHolder surfaceHolder, int i, int i2, int i3) {
             super.onSurfaceChanged(surfaceHolder, i, i2, i3);
             this.renderer.setSize(i2, i3);
+            if (Build.VERSION.SDK_INT >= 30 && surfaceHolder.getSurface().isValid()) {
+                try { surfaceHolder.getSurface().setFrameRate(120f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT); }
+                catch (IllegalArgumentException | IllegalStateException ignored) {}
+            }
             if (this.visibleNow) {
-                this.handler.removeCallbacks(this.frame);
-                this.handler.post(this.frame);
+                this.choreographer.removeFrameCallback(this.frame);
+                this.choreographer.postFrameCallback(this.frame);
             }
         }
 
@@ -291,10 +296,10 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.lastTapY = f2;
                 this.touchAt = fNow;
                 if (this.gestures) {
-                    if (!z2) this.renderer.addRipple(f, f2, fNow);
+                    if (!z2 && this.ripplesEnabled) this.renderer.addRipple(f, f2, fNow);
                     if (z2 && this.renderer.mapOn) {
                         this.holdReveal = !this.holdReveal;
-                        this.flare = 0.25f;
+                        this.flare = this.effectsEnabled ? 0.25f : 0f;
                         this.lastTapT = -100.0f;
                     }
                 }
@@ -339,7 +344,7 @@ public class ArasceWallpaperService extends WallpaperService {
         }
 
         private void stop() {
-            this.handler.removeCallbacks(this.frame);
+            this.choreographer.removeFrameCallback(this.frame);
             this.sensorManager.unregisterListener(this);
         }
 
@@ -355,7 +360,10 @@ public class ArasceWallpaperService extends WallpaperService {
         /* JADX INFO: Access modifiers changed from: private */
         public void drawFrame() {
             float fNow = now();
-            float fMin = this.lastFrameT < 0.0f ? 0.016f : Math.min(0.1f, fNow - this.lastFrameT);
+            float fMin = this.lastFrameT < 0.0f ? 0.008f : Math.max(0f, Math.min(0.1f, fNow - this.lastFrameT));
+            float smoothTilt = 1f - (float)Math.pow(1f - 0.12f, fMin / 0.033f);
+            float smoothBase = 1f - (float)Math.pow(1f - 0.005f, fMin / 0.033f);
+            float smoothPage = 1f - (float)Math.pow(1f - 0.15f, fMin / 0.033f);
             this.lastFrameT = fNow;
             if (this.hasReading) {
                 if (!this.baseSet) {
@@ -363,12 +371,12 @@ public class ArasceWallpaperService extends WallpaperService {
                     this.baseY = this.gy;
                     this.baseSet = true;
                 }
-                this.baseX += (this.gx - this.baseX) * 0.005f;
-                this.baseY += (this.gy - this.baseY) * 0.005f;
+                this.baseX += (this.gx - this.baseX) * smoothBase;
+                this.baseY += (this.gy - this.baseY) * smoothBase;
                 float fClamp = clamp((this.gx - this.baseX) / 3.5f, -1.0f, 1.0f);
                 float fClamp2 = clamp((-(this.gy - this.baseY)) / 3.5f, -1.0f, 1.0f);
-                this.tiltX = ((fClamp - this.tiltX) * 0.12f) + this.tiltX;
-                this.tiltY += (fClamp2 - this.tiltY) * 0.12f;
+                this.tiltX = ((fClamp - this.tiltX) * smoothTilt) + this.tiltX;
+                this.tiltY += (fClamp2 - this.tiltY) * smoothTilt;
             }
             if (!this.dragging) {
                 this.spin += this.spinVel * fMin;
@@ -377,12 +385,12 @@ public class ArasceWallpaperService extends WallpaperService {
                     this.spinVel = 0.0f;
                 }
             }
-            this.pageSpinShown += (this.pageSpin - this.pageSpinShown) * 0.15f;
+            this.pageSpinShown += (this.pageSpin - this.pageSpinShown) * smoothPage;
             this.renderer.spin = this.spin + this.pageSpinShown;
             float f = this.holdReveal ? 1.0f : 0.0f;
-            this.reveal = (0.12f * (f - this.reveal)) + this.reveal;
+            this.reveal = (smoothTilt * (f - this.reveal)) + this.reveal;
             this.flare = ((float) Math.exp((-fMin) * 1.3f)) * this.flare;
-            this.renderer.flare = this.flare;
+            this.renderer.flare = this.effectsEnabled ? this.flare : 0f;
             if (fNow - this.lastPaletteT > 20.0f) {
                 this.renderer.setPalette(this.dayCycle ? Palette.forNow() : Palette.DAY);
                 this.renderer.updateCalendar();
@@ -396,7 +404,7 @@ public class ArasceWallpaperService extends WallpaperService {
                 if (canvasLockHardwareCanvas != null) {
                     float age = fNow - this.touchAt;
                     float inscription = age >= 0f && age < 2.6f ? Math.min(1f, age / 0.35f) * Math.min(1f, (2.6f - age) / 1.1f) : 0f;
-                    this.renderer.draw(canvasLockHardwareCanvas, fNow, this.tiltX, this.tiltY, this.reveal, inscription);
+                    this.renderer.draw(canvasLockHardwareCanvas, fNow, this.tiltX, this.tiltY, this.reveal, this.effectsEnabled ? inscription : 0f);
                 }
                 if (canvasLockHardwareCanvas != null) {
                     try {
@@ -420,9 +428,9 @@ public class ArasceWallpaperService extends WallpaperService {
                 }
                 throw th;
             }
-            this.handler.removeCallbacks(this.frame);
+            this.choreographer.removeFrameCallback(this.frame);
             if (this.visibleNow) {
-                this.handler.postDelayed(this.frame, 33L);
+                this.choreographer.postFrameCallback(this.frame);
             }
         }
     }

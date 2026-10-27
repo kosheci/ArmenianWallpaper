@@ -83,6 +83,11 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams brightParams = fullWidth(dp(48));
         brightParams.topMargin = dp(8);
         presets.addView(bright, brightParams);
+        section("Эффекты");
+        LinearLayout effects = card();
+        toggle(effects, "Визуальные эффекты", "Общий выключатель анимации, свечения, частиц и наклона", "effects_enabled", true);
+        toggle(effects, "Центральная искра", "Небольшой блик в центре аревахача", "sparkle_enabled", true);
+        toggle(effects, "Волны от касаний", "Круги света при касании и разблокировке", "ripples_enabled", true);
         section("Движение");
         LinearLayout linearLayoutCard = card();
         toggle(linearLayoutCard, "Объёмный наклон 3D", "Эмблема поворачивается в перспективе при наклоне телефона", "perspective", true);
