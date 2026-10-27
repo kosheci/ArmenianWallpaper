@@ -573,6 +573,7 @@ final class ArasceRenderer {
                 this.map.drawLines(canvas, 1f, 0f);
                 canvas.restore();
                 this.map.setColors(this.palette.lit, this.palette.light);
+                this.map.drawRelief(canvas, f6, f7, this.s);
                 this.map.drawLines(canvas, 1f, fSin);
                 this.map.drawLabels(canvas, 1f);
                 canvas.restore();

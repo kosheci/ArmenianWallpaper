@@ -18,6 +18,12 @@ final class MapLayer {
     private static final float[] LABEL_LL = {42.2f, 40.15f, 37.8f, 34.6f, 47.4f, 36.6f, 35.1f, 37.15f, 43.4f, 42.1f, 47.6f, 41.5f};
     private static final String[] CITIES = {"Арташат", "Тигранакерт", "Антиохия", "Дамаск", "Птолемаида"};
     private static final float[] CITY_LL = {44.55f, 39.95f, 41.0f, 38.1f, 36.16f, 36.2f, 36.3f, 33.51f, 35.07f, 32.93f};
+    // Artistic marker positions, not surveyed historical borders.
+    private static final String[] REGIONS = {"Բարձր Հայք","Ծոփք","Աղձնիք","Տուրուբերան","Մոկք","Կորճայք","Պարսկահայք","Վասպուրական","Սյունիք","Արցախ","Փայտակարան","Ուտիք","Գուգարք","Տայք","Այրարատ"};
+    private static final float[] REGION_LL = {39.4f,40.0f, 38.6f,38.9f, 40.5f,37.9f, 42.2f,39.1f, 42.9f,38.3f, 43.8f,37.9f, 45.0f,38.2f, 43.8f,39.0f, 45.7f,39.8f, 46.8f,40.0f, 48.3f,39.4f, 47.4f,40.4f, 44.5f,41.1f, 41.1f,40.8f, 43.7f,40.2f};
+    private final float[] regionXY = new float[REGION_LL.length];
+    private final Path wall = new Path();
+    private final Paint wallPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path core = new Path();
     private final Path others = new Path();
     private final Path raid = new Path();
@@ -54,6 +60,7 @@ final class MapLayer {
         addPoly(this.raid, RAID);
         project(LABEL_LL, this.labelXY);
         project(CITY_LL, this.cityXY);
+        project(REGION_LL, this.regionXY);
         float f2 = this.k / 60.0f;
         this.line.setStrokeWidth(Math.max(1.5f, 1.6f * f2));
         this.raidLine.setStrokeWidth(Math.max(1.2f, 1.2f * f2));
@@ -84,6 +91,24 @@ final class MapLayer {
         for (int i = 0; i < fArr.length; i += 2) {
             fArr2[i] = (fArr[i] - LON_C) * COS * this.k;
             fArr2[i + 1] = (-(fArr[i + 1] - LAT_C)) * this.k;
+        }
+    }
+
+    void drawRelief(Canvas canvas, float tiltX, float tiltY, float scale) {
+        float depth = Math.max(2f, Math.min(16f, 8f * scale));
+        float dx = -tiltX * depth * 0.6f;
+        float dy = depth * (0.65f + tiltY * 0.4f);
+        wallPaint.setStyle(Paint.Style.FILL);
+        int color = this.light & 0x00ffffff;
+        for (int i = 0; i < CORE.length; i += 2) {
+            int j = (i + 2) % CORE.length;
+            float x1 = (CORE[i] - LON_C) * COS * k, y1 = -(CORE[i+1] - LAT_C) * k;
+            float x2 = (CORE[j] - LON_C) * COS * k, y2 = -(CORE[j+1] - LAT_C) * k;
+            wall.reset(); wall.moveTo(x1,y1); wall.lineTo(x2,y2);
+            wall.lineTo(x2+dx,y2+dy); wall.lineTo(x1+dx,y1+dy); wall.close();
+            float normal = (y2-y1) / Math.max(0.001f, (float)Math.hypot(x2-x1,y2-y1));
+            wallPaint.setColor(color | (clamp((int)(85f + 45f * normal)) << 24));
+            canvas.drawPath(wall, wallPaint);
         }
     }
 
@@ -125,6 +150,12 @@ final class MapLayer {
                 canvas.drawCircle(f2, f3, 0.28f * textSize, this.dot);
                 canvas.drawText(CITIES[i2], f2, f3 - (0.6f * textSize), this.label);
             }
+            // Points are a conceptual arrangement: they are not historical boundaries.
+            for (int j = 0; j < REGIONS.length; j++) {
+                float rx = this.regionXY[j*2], ry = this.regionXY[j*2+1];
+                this.dot.setColor((this.light & 0x00ffffff) | (clamp((int)(150f*f)) << 24));
+                canvas.drawCircle(rx, ry, Math.max(2.5f, textSize * 0.22f), this.dot);
+            }
             float araratX = (44.29833f - LON_C) * COS * this.k;
             float araratY = -(39.70194f - LAT_C) * this.k;
             this.label.setTextSize(textSize * 1.12f);
@@ -148,7 +179,12 @@ final class MapLayer {
         float ax = (44.29833f - LON_C) * COS * this.k;
         float ay = -(39.70194f - LAT_C) * this.k;
         float dx = x-ax, dy = y-ay;
-        if (dx*dx + dy*dy < best) name = "ԱՐԱՐԱՏ";
+        if (dx*dx + dy*dy < best) { best = dx*dx + dy*dy; name = "ԱՐԱՐԱՏ"; }
+        for (int j = 0; j < REGIONS.length; j++) {
+            float rx = x - this.regionXY[j*2], ry = y - this.regionXY[j*2+1];
+            float distance = rx*rx + ry*ry;
+            if (distance < best) { best = distance; name = REGIONS[j] + " · условно"; }
+        }
         return name;
     }
 

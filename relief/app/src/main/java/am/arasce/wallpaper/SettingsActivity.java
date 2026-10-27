@@ -162,8 +162,8 @@ public class SettingsActivity extends Activity {
         toggle(linearLayoutCard3, "Лучи из центра", "Тонкие лучи света вокруг аревахача", "rays", false);
         toggle(linearLayoutCard3, "Туманность", "Глубокие облака синего, фиолетового и бирюзового на фоне", "nebula", true);
         toggle(linearLayoutCard3, "Силуэт Арарата", "Горизонтальный силуэт меняет яркость в течение суток", "ararat_mountain", true);
-        toggle(linearLayoutCard3, "Касания карты", "Коснитесь отметки города или Арарата на открытой карте", "map_touch", true);
-        toggle(linearLayoutCard3, "Карта державы Тиграна", "Карта за эмблемой. Показывается и скрывается двойным касанием.", "map", true);
+        toggle(linearLayoutCard3, "Касания карты", "Коснитесь точки города или одного из 15 условных регионов", "map_touch", true);
+        toggle(linearLayoutCard3, "Карта державы Тиграна", "Художественная схема: границы и места областей условные. Двойное касание переворачивает медальон.", "map", true);
         section("Касания");
         LinearLayout linearLayoutCard4 = card();
         toggle(linearLayoutCard4, "Жесты", "Тап — волна и свечение надписи. Двойной тап — показать или скрыть карту. Проведите по кругу, чтобы раскрутить кольца.", "gestures", true);
