@@ -259,7 +259,7 @@ final class ArasceRenderer {
         this.parallax = 26.0f * this.s;
         this.vignettePaint.setShader(new RadialGradient(this.cx, this.h * BAKE, Math.max(this.w, this.h) * 0.75f, new int[]{0, 0, -1207959552}, new float[]{0.0f, BAKE, 1.0f}, Shader.TileMode.CLAMP));
         rebuildBackground();
-        this.map.setSize(this.w);
+        this.map.setSize(this.w * this.layoutScale);
         bakeAll();
     }
 
