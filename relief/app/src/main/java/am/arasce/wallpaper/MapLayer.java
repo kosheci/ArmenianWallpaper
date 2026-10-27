@@ -143,9 +143,9 @@ final class MapLayer {
         canvas.save();
         canvas.clipPath(this.core);
         this.terrainPaint.setStyle(Paint.Style.FILL);
-        this.terrainPaint.setColor((this.light & 0x00ffffff) | (26 << 24));
-        canvas.drawPath(this.terrainLight,this.terrainPaint);
         this.terrainPaint.setColor((this.light & 0x00ffffff) | (42 << 24));
+        canvas.drawPath(this.terrainLight,this.terrainPaint);
+        this.terrainPaint.setColor(0x88150e08);
         canvas.drawPath(this.terrainShadow,this.terrainPaint);
         canvas.restore();
     }
@@ -167,7 +167,7 @@ final class MapLayer {
         this.line.setStrokeWidth(strokeWidth);
     }
 
-    void drawLabels(Canvas canvas, float f) {
+    void drawLabels(Canvas canvas, float f, boolean enhanced) {
         if (f >= 0.03f) {
             int iClamp = clamp((int) (230.0f * f));
             this.label.setColor((this.lit & 16777215) | (iClamp << 24));
@@ -198,7 +198,11 @@ final class MapLayer {
             float araratY = -(39.70194f - LAT_C) * this.k;
             this.label.setTextSize(textSize * 1.12f);
             this.dot.setColor((this.lit & 16777215) | (iClamp << 24));
-            float mountain = Math.max(8f, textSize * 0.85f);
+            float mountain = Math.max(8f, textSize * (enhanced ? 1.2f : 0.85f));
+            if (enhanced) {
+                this.dot.setColor((this.light & 0x00ffffff) | (clamp((int)(65f*f)) << 24));
+                canvas.drawCircle(araratX, araratY, mountain * 1.55f, this.dot);
+            }
             Path peak = this.wall;
             peak.reset(); peak.moveTo(araratX - mountain, araratY + mountain * 0.55f);
             peak.lineTo(araratX, araratY - mountain);

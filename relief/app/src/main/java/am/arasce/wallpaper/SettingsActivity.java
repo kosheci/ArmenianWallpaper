@@ -108,6 +108,8 @@ public class SettingsActivity extends Activity {
         section("Эффекты");
         LinearLayout effects = card();
         toggle(effects, "Визуальные эффекты", "Общий выключатель анимации, свечения, частиц и наклона", "effects_enabled", true);
+        toggle(effects, "Объём золота", "Тени и блики на аревахаче", "metal_depth", true);
+        toggle(effects, "Свет на ребре медальона", "Освещение при перевороте к карте", "flip_depth", true);
         toggle(effects, "Центральная искра", "Небольшой блик в центре аревахача", "sparkle_enabled", true);
         toggle(effects, "Волны от касаний", "Круги света при касании и разблокировке", "ripples_enabled", true);
         toggle(effects, "Плавное пробуждение", "Мягкое появление при разблокировке", "wake_fade", true);
@@ -212,7 +214,7 @@ public class SettingsActivity extends Activity {
         build();
     }
 
-    private static final String[] STYLE_KEYS = {"effects_enabled","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
+    private static final String[] STYLE_KEYS = {"effects_enabled","metal_depth","flip_depth","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
         "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
         "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
         "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","map_terrain","map_zoom","map_x","map_y","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};

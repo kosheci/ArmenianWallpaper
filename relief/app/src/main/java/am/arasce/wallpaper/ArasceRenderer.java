@@ -59,6 +59,7 @@ final class ArasceRenderer {
     boolean nebulaOn = true;
     boolean mapOn = true;
     boolean terrainOn = true;
+    boolean metalDepthOn = true, flipDepthOn = true;
     float mapZoom = 1f, mapShiftX = 0f, mapShiftY = 0f;
     boolean effectsOn = true;
     boolean sparkleOn = true;
@@ -108,6 +109,7 @@ final class ArasceRenderer {
     int batteryPercent = -1;
     private final Paint celestialPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint flipPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint metalDetailPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF celestialArc = new RectF(-375f, -375f, 375f, 375f);
     private float s = 1.0f;
     private float lastT = -1.0f;
@@ -582,7 +584,7 @@ final class ArasceRenderer {
                 this.map.drawRelief(canvas, f6, f7, this.s);
                 if (this.terrainOn) this.map.drawTerrain(canvas, f6, f7);
                 this.map.drawLines(canvas, 1f, fSin);
-                this.map.drawLabels(canvas, 1f);
+                this.map.drawLabels(canvas, 1f, this.effectsOn && this.terrainOn);
                 canvas.restore();
             }
             if (f4 < 0.5f) {
@@ -665,7 +667,18 @@ final class ArasceRenderer {
             canvas.drawCircle(0.0f, 0.0f, 110.0f, this.medallionPaint);
             shadowAndGlow(canvas, this.glowRosette, 0.0f, f6, f7, 100, (int) (110.0f + (60.0f * fSin) + (85.0f * fMax)));
             applySheen(0.0f);
+            if (this.effectsOn && this.metalDepthOn) {
+                Paint detail = this.metalDetailPaint;
+                detail.setShader(null); detail.setStyle(Paint.Style.STROKE);
+                detail.setStrokeWidth(4.5f); detail.setColor(0xff150d06); detail.setAlpha(150);
+                canvas.save(); canvas.translate(1.8f, 3.0f); canvas.drawPath(this.arms, detail); canvas.restore();
+            }
             geomRosette(canvas, this.stroke, true);
+            if (this.effectsOn && this.metalDepthOn) {
+                Paint detail = this.metalDetailPaint;
+                detail.setColor(this.palette.light); detail.setAlpha(125); detail.setStrokeWidth(0.85f);
+                canvas.save(); canvas.translate(-0.9f, -1.0f); canvas.drawPath(this.arms, detail); canvas.restore();
+            }
             canvas.drawCircle(0.0f, 0.0f, 5.0f, this.dotPaint);
             canvas.restore();
                 canvas.restore();
@@ -935,6 +948,15 @@ final class ArasceRenderer {
         pnt.setAlpha((int)(95 + 100 * turn));
         canvas.drawOval(this.cx - radius * face - thickness * 0.55f, this.cy - radius,
                 this.cx + radius * face + thickness * 0.55f, this.cy + radius, pnt);
+        if (this.effectsOn && this.flipDepthOn && turn > 0.02f) {
+            pnt.setStrokeWidth(Math.max(1f, 2f * this.s));
+            pnt.setColor(this.palette.lit); pnt.setAlpha((int)(140f * turn));
+            canvas.drawArc(this.cx - radius * face - thickness * 0.65f, this.cy - radius,
+                    this.cx + radius * face + thickness * 0.65f, this.cy + radius, 200f, 145f, false, pnt);
+            pnt.setColor(this.palette.dark); pnt.setAlpha((int)(170f * turn));
+            canvas.drawArc(this.cx - radius * face - thickness * 0.65f, this.cy - radius,
+                    this.cx + radius * face + thickness * 0.65f, this.cy + radius, 20f, 145f, false, pnt);
+        }
         pnt.setStyle(Paint.Style.FILL);
         if (turn > 0.02f) {
             pnt.setColor(this.palette.lit);

@@ -153,6 +153,8 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.mapOn = this.prefs.getBoolean("map", true);
             if (!this.renderer.mapOn) this.holdReveal = false;
             this.renderer.terrainOn = this.prefs.getBoolean("map_terrain", true);
+            this.renderer.metalDepthOn = this.prefs.getBoolean("metal_depth", true);
+            this.renderer.flipDepthOn = this.prefs.getBoolean("flip_depth", true);
             this.renderer.mapZoom = this.prefs.getInt("map_zoom", 100) / 100f;
             this.renderer.mapShiftX = (this.prefs.getInt("map_x", 50) - 50) / 100f;
             this.renderer.mapShiftY = (this.prefs.getInt("map_y", 50) - 50) / 100f;
