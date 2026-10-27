@@ -412,7 +412,7 @@ public class ArasceWallpaperService extends WallpaperService {
             this.flare = ((float) Math.exp((-fMin) * 1.3f)) * this.flare;
             this.renderer.flare = this.effectsEnabled ? this.flare : 0f;
             if (fNow - this.lastPaletteT > 20.0f) {
-                this.renderer.setPalette(this.dayCycle ? Palette.forNow() : (this.nightGold ? Palette.NIGHT : Palette.DAY));
+                this.renderer.setPalette(this.dayCycle ? Palette.forNow() : (this.nightGold ? new Palette(Palette.DAY.light, Palette.DAY.mid, Palette.DAY.dark, Palette.DAY.lit, Palette.DAY.dot, Palette.NIGHT.bg) : Palette.DAY));
                 this.renderer.updateCalendar();
                 updateBattery();
                 this.lastPaletteT = fNow;
