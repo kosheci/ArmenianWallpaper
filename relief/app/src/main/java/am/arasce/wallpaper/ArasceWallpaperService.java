@@ -138,6 +138,8 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.raysOn = this.prefs.getBoolean("rays", false);
             this.renderer.nebulaOn = this.prefs.getBoolean("nebula", true);
             this.renderer.mapOn = this.prefs.getBoolean("map", true);
+            this.renderer.matrixOn = this.prefs.getBoolean("matrix_on", true);
+            this.renderer.matrixIntensity = this.prefs.getInt("matrix_intensity", 55);
             this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", true);
             this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
             if (!this.renderer.compassOn) this.renderer.compassReady = false;

@@ -58,6 +58,10 @@ final class ArasceRenderer {
     boolean raysOn = true;
     boolean nebulaOn = true;
     boolean mapOn = true;
+    boolean matrixOn = true;
+    int matrixIntensity = 55;
+    private final Paint matrixPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final String MATRIX_LETTERS = "ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖ";
     boolean calendarOn = true;
     boolean compassOn = false;
     volatile boolean compassReady = false;
@@ -531,6 +535,7 @@ final class ArasceRenderer {
                 canvas.restore();
             }
             drawFlipDisc(canvas, f4);
+            if (this.matrixOn) drawArmenianMatrix(canvas, f);
             if (this.mapOn && f4 >= 0.5f) {
                 canvas.save();
                 canvas.translate(this.cx - ((f6 * f8) * 0.15f), this.cy - ((f7 * f8) * 0.15f));
@@ -668,6 +673,35 @@ final class ArasceRenderer {
             }
             canvas.drawRect(0.0f, 0.0f, this.w, this.h, this.vignettePaint);
             drawInfo(canvas);
+        }
+    }
+
+    private void drawArmenianMatrix(Canvas canvas, float time) {
+        Paint p = this.matrixPaint;
+        float spacing = Math.max(20f, this.w / 19f);
+        float height = this.h + spacing * 14f;
+        p.setTypeface(Typeface.create("monospace", Typeface.BOLD));
+        p.setTextAlign(Paint.Align.CENTER);
+        p.setTextSize(spacing * 0.68f);
+        p.setStyle(Paint.Style.FILL);
+        p.setShader(null);
+        int strength = Math.max(0, Math.min(100, this.matrixIntensity));
+        int cols = (int)Math.ceil(this.w / spacing);
+        int ticks = (int)(time * 3.0f);
+        for (int col = 0; col < cols; col++) {
+            float speed = spacing * (0.72f + (col * 17 % 13) * 0.045f);
+            float seed = ((col * 97) % 173) * spacing;
+            float y = ((time * speed + seed) % height) - spacing * 2f;
+            for (int row = 0; row < 11; row++) {
+                float py = y - row * spacing;
+                if (py < -spacing || py > this.h + spacing) continue;
+                int index = Math.floorMod(col * 97 + row * 31 + ticks / 3, MATRIX_LETTERS.length());
+                float fade = (11f - row) / 11f;
+                int alpha = Math.min(255, (int)((row == 0 ? 230f : 125f * fade) * strength / 100f));
+                p.setColor(row == 0 ? 0xffb8ffd1 : 0xff36ca72);
+                p.setAlpha(alpha);
+                canvas.drawText(MATRIX_LETTERS, index, index + 1, (col + 0.5f) * spacing, py, p);
+            }
         }
     }
 

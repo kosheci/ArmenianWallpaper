@@ -93,6 +93,10 @@ public class SettingsActivity extends Activity {
         slider(linearLayoutCard2, "Надпись в покое", "glow", 18, 0, 60, "%");
         slider(linearLayoutCard2, "Золотые пылинки", "motes", 40, 0, 150, "");
         toggle(linearLayoutCard2, "Цвет по времени суток", "Рассвет — розовое золото, день — золото, закат — янтарь, ночь — серебро", "daycycle", true);
+        section("Армянская матрица");
+        LinearLayout matrix = card();
+        toggle(matrix, "Буквы Матрицы", "Зелёный дождь из букв армянского алфавита на фоне", "matrix_on", true);
+        slider(matrix, "Яркость букв", "matrix_intensity", 55, 0, 100, "%");
         section("Арарат и календарь");
         LinearLayout heritage = card();
         toggle(heritage, "Армянский календарь", "Традиционный 365-дневный календарь, летосчисление с 552 года", "armenian_calendar", true);
