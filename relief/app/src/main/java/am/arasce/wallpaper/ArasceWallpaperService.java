@@ -275,7 +275,7 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.touchAt = fNow;
                 if (this.gestures) {
                     this.renderer.addRipple(f, f2, fNow);
-                    if (z2) {
+                    if (z2 && this.renderer.mapOn) {
                         this.holdReveal = !this.holdReveal;
                         this.flare = 1.0f;
                         this.lastTapT = -100.0f;
@@ -341,7 +341,7 @@ public class ArasceWallpaperService extends WallpaperService {
             this.pageSpinShown += (this.pageSpin - this.pageSpinShown) * 0.15f;
             this.renderer.spin = this.spin + this.pageSpinShown;
             float f = this.holdReveal ? 1.0f : 0.0f;
-            this.reveal = ((f > this.reveal ? 0.12f : 0.025f) * (f - this.reveal)) + this.reveal;
+            this.reveal = (0.12f * (f - this.reveal)) + this.reveal;
             this.flare = ((float) Math.exp((-fMin) * 1.3f)) * this.flare;
             this.renderer.flare = this.flare;
             if (fNow - this.lastPaletteT > 20.0f) {

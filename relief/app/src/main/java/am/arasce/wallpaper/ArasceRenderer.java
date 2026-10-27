@@ -520,13 +520,20 @@ final class ArasceRenderer {
                 canvas.drawBitmap(this.nebula, 0.0f, 0.0f, this.nebulaPaint);
                 canvas.restore();
             }
-            if (this.mapOn) {
+            if (this.mapOn && f4 >= 0.5f) {
                 canvas.save();
                 canvas.translate(this.cx - ((f6 * f8) * 0.15f), this.cy - ((f7 * f8) * 0.15f));
+                canvas.scale(Math.max(0.001f, -(float)Math.cos(Math.PI * f4)), 1f);
                 applyMapPerspective(canvas, f6, f7);
-                this.map.drawLines(canvas, f4, fSin);
+                this.map.drawLines(canvas, 1f, fSin);
+                this.map.drawLabels(canvas, 1f);
                 canvas.restore();
             }
+            if (f4 < 0.5f) {
+                canvas.save();
+                canvas.translate(this.cx, this.cy);
+                canvas.scale(Math.max(0.001f, (float)Math.cos(Math.PI * f4)), 1f);
+                canvas.translate(-this.cx, -this.cy);
             if (this.celestialOn) drawCelestial(canvas, f, f6, f7);
             if (this.perspectiveOn) {
                 canvas.save();
@@ -604,11 +611,6 @@ final class ArasceRenderer {
             geomRosette(canvas, this.stroke, true);
             canvas.drawCircle(0.0f, 0.0f, 5.0f, this.dotPaint);
             canvas.restore();
-            if (this.mapOn) {
-                canvas.save();
-                canvas.translate(this.cx - ((f6 * f8) * 0.15f), this.cy - ((f7 * f8) * 0.15f));
-                applyMapPerspective(canvas, f6, f7);
-                this.map.drawLabels(canvas, f4);
                 canvas.restore();
             }
             float f14 = this.cx - (f6 * f8);
@@ -616,7 +618,7 @@ final class ArasceRenderer {
             float f16 = (90.0f + (40.0f * fSin) + (170.0f * fMax)) * this.s * BAKE;
             this.sparklePaint.setAlpha(clamp((int) ((0.12f + (0.12f * fSin) + (0.26f * fMax)) * 255.0f)));
             this.tmpRect.set(f14 - f16, f15 - f16, f14 + f16, f15 + f16);
-            canvas.drawBitmap(this.sparkle, (Rect) null, this.tmpRect, this.sparklePaint);
+            if (f4 < 0.5f) canvas.drawBitmap(this.sparkle, (Rect) null, this.tmpRect, this.sparklePaint);
             for (int i = 0; i < MAX_RIPPLES; i++) {
                 float f17 = f - this.rt[i];
                 if (f17 >= 0.0f && f17 <= RIPPLE_LIFE) {
