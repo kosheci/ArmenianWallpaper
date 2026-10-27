@@ -55,10 +55,10 @@ jobs:
           s=p.read_text().replace('this.map.drawLines(canvas, fMax, fSin);','this.map.drawLines(canvas, f4, fSin);')
           s=s.replace('(0.28f + (0.2f * fSin) + (0.52f * fMax))','(0.12f + (0.12f * fSin) + (0.26f * fMax))')
           p.write_text(s)
-          (root/'settings.gradle').write_text("pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\\nrootProject.name='AstuatsArasce'\\ninclude ':app'\\n")
-          (root/'build.gradle').write_text("plugins { id 'com.android.application' version '8.5.2' apply false }\\n")
-          (root/'app/build.gradle').write_text("plugins { id 'com.android.application' }\\nandroid { namespace 'am.arasce.wallpaper'; compileSdk 35; defaultConfig { applicationId 'am.arasce.wallpaper'; minSdk 28; targetSdk 29; versionCode 5; versionName '1.4' }; compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 } }\\n")
-          (root/'gradle.properties').write_text("org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8\\n")
+          (root/'settings.gradle').write_text("pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\nrootProject.name='AstuatsArasce'\ninclude ':app'\n")
+          (root/'build.gradle').write_text("plugins { id 'com.android.application' version '8.5.2' apply false }\n")
+          (root/'app/build.gradle').write_text("plugins { id 'com.android.application' }\nandroid { namespace 'am.arasce.wallpaper'; compileSdk 35; defaultConfig { applicationId 'am.arasce.wallpaper'; minSdk 28; targetSdk 29; versionCode 5; versionName '1.4' }; compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 } }\n")
+          (root/'gradle.properties').write_text("org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8\n")
           PY
       - uses: gradle/actions/setup-gradle@v4
         with:
