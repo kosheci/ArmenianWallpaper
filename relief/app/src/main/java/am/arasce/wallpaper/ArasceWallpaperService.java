@@ -164,6 +164,13 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.matrixSpeed = this.prefs.getInt("matrix_speed", 100);
             this.renderer.matrixSize = this.prefs.getInt("matrix_size", 100);
             this.renderer.matrixOrdered = this.prefs.getBoolean("matrix_ordered", false);
+            this.renderer.rainDepthOn = this.prefs.getBoolean("rain_depth", true);
+            this.renderer.cleanMode = this.prefs.getBoolean("clean_mode", false);
+            this.renderer.compassX = this.prefs.getInt("compass_x", 50) / 100f;
+            this.renderer.compassY = this.prefs.getInt("compass_y", 73) / 100f;
+            this.renderer.compassScale = this.prefs.getInt("compass_size", 100) / 100f;
+            this.renderer.infoScale = this.prefs.getInt("info_size", 100) / 100f;
+            if (this.renderer.cleanMode) { this.renderer.matrixOn = false; this.renderer.moteCount = 0; }
             this.renderer.calendarPosition = this.prefs.getBoolean("calendar_below", false) ? 1 : 0;
             this.renderer.setLayout(this.prefs.getInt("emblem_size", 100) / 100f, this.prefs.getInt("emblem_x", 50) / 100f, this.prefs.getInt("emblem_y", 56) / 100f);
             this.autoEnergy = this.prefs.getBoolean("auto_energy", true);

@@ -100,6 +100,20 @@ public class SettingsActivity extends Activity {
         Button loadStyle = button("Вернуть мой стиль", false);
         loadStyle.setOnClickListener(v -> loadMyStyle());
         presets.addView(loadStyle, fullWidth(dp(48)));
+        Button slots = button("Три личных профиля", false);
+        slots.setOnClickListener(v -> chooseStyleSlot());
+        presets.addView(slots, fullWidth(dp(48)));
+        section("Производительность");
+        LinearLayout performance = card();
+        Button smooth = button("Плавность", false);
+        smooth.setOnClickListener(v -> { prefs.edit().putBoolean("auto_energy", false).apply(); build(); });
+        performance.addView(smooth, fullWidth(dp(48)));
+        Button balanced = button("Баланс", false);
+        balanced.setOnClickListener(v -> { prefs.edit().putBoolean("auto_energy", true).putInt("motes", 40).apply(); build(); });
+        performance.addView(balanced, fullWidth(dp(48)));
+        Button economy = button("Экономия эффектов", false);
+        economy.setOnClickListener(v -> { prefs.edit().putBoolean("auto_energy", true).putInt("motes", 10).putInt("matrix_density", 40).apply(); build(); });
+        performance.addView(economy, fullWidth(dp(48)));
         section("Композиция");
         LinearLayout layout = card();
         slider(layout, "Размер медальона", "emblem_size", 100, 60, 120, "%");
@@ -107,6 +121,7 @@ public class SettingsActivity extends Activity {
         slider(layout, "Положение по вертикали", "emblem_y", 56, 30, 75, "%");
         section("Эффекты");
         LinearLayout effects = card();
+        toggle(effects, "Чистый экран", "Скрыть календарь, компас, дождь и частицы", "clean_mode", false);
         toggle(effects, "Визуальные эффекты", "Общий выключатель анимации, свечения, частиц и наклона", "effects_enabled", true);
         toggle(effects, "Объём золота", "Тени и блики на аревахаче", "metal_depth", true);
         toggle(effects, "Свет на ребре медальона", "Освещение при перевороте к карте", "flip_depth", true);
@@ -136,6 +151,7 @@ public class SettingsActivity extends Activity {
         section("Армянская матрица");
         LinearLayout matrix = card();
         toggle(matrix, "Буквы Матрицы", "Золотой дождь из букв армянского алфавита в цвете обоев", "matrix_on", true);
+        toggle(matrix, "Глубина дождя", "Разный размер и скорость ближних и дальних букв", "rain_depth", true);
         toggle(matrix, "Кольцо армянских букв", "Буквы вокруг медальона", "letter_halo", false);
         slider(matrix, "Яркость букв", "matrix_intensity", 55, 0, 100, "%");
         slider(matrix, "Плотность букв", "matrix_density", 100, 0, 100, "%");
@@ -152,6 +168,10 @@ public class SettingsActivity extends Activity {
         this.compassStateView.setPadding(dp(4), dp(6), dp(4), dp(6));
         heritage.addView(this.compassStateView);
         toggle(heritage, "Компас на Арарат", "Нужны компас телефона и недавно обновлённое местоположение", "ararat_compass", false);
+        slider(heritage, "Компас по горизонтали", "compass_x", 50, 10, 90, "%");
+        slider(heritage, "Компас по вертикали", "compass_y", 73, 20, 85, "%");
+        slider(heritage, "Размер стрелки", "compass_size", 100, 50, 180, "%");
+        slider(heritage, "Размер календаря и списка", "info_size", 100, 70, 140, "%");
         toggle(heritage, "Указатель севера", "Дополнительная метка N рядом со стрелкой Арарата", "north_marker", true);
         Button locate = button("Разрешить и обновить местоположение", false);
         locate.setOnClickListener(v -> requestAraratLocation());
@@ -214,23 +234,25 @@ public class SettingsActivity extends Activity {
         build();
     }
 
-    private static final String[] STYLE_KEYS = {"effects_enabled","metal_depth","flip_depth","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
+    private static final String[] STYLE_KEYS = {"effects_enabled","clean_mode","rain_depth","compass_x","compass_y","compass_size","info_size","metal_depth","flip_depth","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
         "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
         "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
         "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","map_terrain","map_zoom","map_x","map_y","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};
-    private void saveMyStyle() {
+    private void saveMyStyle() { saveMyStyle("user_style"); }
+    private void saveMyStyle(String slot) {
         try {
             org.json.JSONObject data = new org.json.JSONObject();
             java.util.Map<String, ?> all = prefs.getAll();
             for (String key : STYLE_KEYS) if (all.containsKey(key)) data.put(key, all.get(key));
-            prefs.edit().putString("user_style", data.toString()).apply();
+            prefs.edit().putString(slot, data.toString()).apply();
             Toast.makeText(this, "Ваш стиль сохранён", Toast.LENGTH_SHORT).show();
         } catch (org.json.JSONException e) {
             Toast.makeText(this, "Не удалось сохранить стиль", Toast.LENGTH_SHORT).show();
         }
     }
-    private void loadMyStyle() {
-        String raw = prefs.getString("user_style", null);
+    private void loadMyStyle() { loadMyStyle("user_style"); }
+    private void loadMyStyle(String slot) {
+        String raw = prefs.getString(slot, null);
         if (raw == null) { Toast.makeText(this, "Сначала сохраните свой стиль", Toast.LENGTH_SHORT).show(); return; }
         try {
             org.json.JSONObject data = new org.json.JSONObject(raw);
@@ -245,6 +267,18 @@ public class SettingsActivity extends Activity {
         } catch (org.json.JSONException e) {
             Toast.makeText(this, "Не удалось восстановить стиль", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void chooseStyleSlot() {
+        String[] slots = {"Профиль 1", "Профиль 2", "Профиль 3"};
+        new android.app.AlertDialog.Builder(this).setTitle("Личные профили")
+            .setItems(slots, (dialog, which) -> {
+                String key = "user_style_slot_" + which;
+                new android.app.AlertDialog.Builder(this).setTitle(slots[which])
+                    .setItems(new String[]{"Сохранить текущий стиль", "Загрузить стиль"}, (d, action) -> {
+                        if (action == 0) saveMyStyle(key); else loadMyStyle(key);
+                    }).setNegativeButton("Отмена", null).show();
+            }).setNegativeButton("Отмена", null).show();
     }
 
     private void showGavarCatalog() {

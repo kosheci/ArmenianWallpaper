@@ -1,7 +1,7 @@
 name: Build Astuats Arasce Luys 3D
 on:
   push:
-    branches: [arasce-graphic-depth]
+    branches: [arasce-personal-controls]
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
         run: gradle --no-daemon --console=plain assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Astuats-Arasce-Graphic-Depth-apk
+          name: Astuats-Arasce-Personal-apk
           path: relief/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
       - name: Save official Android signing tool

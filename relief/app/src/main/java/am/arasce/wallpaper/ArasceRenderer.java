@@ -79,7 +79,8 @@ final class ArasceRenderer {
     private final Paint haloPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     boolean matrixOn = true;
     int matrixDensity = 100, matrixSpeed = 100, matrixSize = 100;
-    boolean matrixOrdered = false;
+    boolean matrixOrdered = false, rainDepthOn = true, cleanMode = false;
+    float compassX = 0.5f, compassY = 0.73f, compassScale = 1f, infoScale = 1f;
     int calendarPosition = 0;
     float layoutScale = 1f, layoutX = 0.5f, layoutY = 0.56f;
     float wakeAt = -100f;
@@ -585,6 +586,7 @@ final class ArasceRenderer {
                 if (this.terrainOn) this.map.drawTerrain(canvas, f6, f7);
                 this.map.drawLines(canvas, 1f, fSin);
                 this.map.drawLabels(canvas, 1f, this.effectsOn && this.terrainOn);
+                if (this.mapTouchOn && f < this.selectedUntil) this.map.drawSelection(canvas, this.selectedMapCity);
                 canvas.restore();
             }
             if (f4 < 0.5f) {
@@ -726,8 +728,8 @@ final class ArasceRenderer {
                 canvas.drawBitmap(this.mBokeh[i2] ? this.bokehSprite : this.dotSprite, (Rect) null, this.tmpRect, this.spritePaint);
             }
             canvas.drawRect(0.0f, 0.0f, this.w, this.h, this.vignettePaint);
-            drawInfo(canvas);
-            if (this.mapTouchOn && f4 > 0.97f && f < this.selectedUntil && !this.selectedMapCity.isEmpty()) {
+            if (!this.cleanMode) drawInfo(canvas);
+            if (!this.cleanMode && this.mapTouchOn && f4 > 0.97f && f < this.selectedUntil && !this.selectedMapCity.isEmpty()) {
                 int regionIndex = GavarCatalog.regionIndex(this.selectedMapCity);
                 this.infoPaint.setTextAlign(Paint.Align.CENTER);
                 this.infoPaint.setTypeface(Typeface.create("serif", Typeface.BOLD));
@@ -736,7 +738,7 @@ final class ArasceRenderer {
                 if (regionIndex >= 0) {
                     String[] names = GavarCatalog.GAVAR_ARRAYS[regionIndex];
                     int pages = (names.length + 4) / 5;
-                    float font = Math.max(20f, this.w * 0.037f), line = font * 1.24f;
+                    float font = Math.max(20f, this.w * 0.037f) * this.infoScale, line = font * 1.24f;
                     float top = this.h * 0.60f;
                     this.flipPaint.setShader(null); this.flipPaint.setStyle(Paint.Style.FILL);
                     this.flipPaint.setColor(0xff08090b); this.flipPaint.setAlpha(220);
@@ -786,7 +788,9 @@ final class ArasceRenderer {
         int ticks = (int)(time * 3.0f);
         for (int col = 0; col < cols; col++) {
             if ((col * 37 % 100) >= this.matrixDensity) continue;
-            float speed = spacing * (0.72f + (col * 17 % 13) * 0.045f) * this.matrixSpeed / 100f * (this.quietActive ? 0.3f : 1f);
+            float layerDepth = this.rainDepthOn ? (0.72f + (col % 4) * 0.14f) : 1f;
+            p.setTextSize(spacing * 0.68f * layerDepth);
+            float speed = spacing * (0.72f + (col * 17 % 13) * 0.045f) * this.matrixSpeed / 100f * layerDepth * (this.quietActive ? 0.3f : 1f);
             float seed = ((col * 97) % 173) * spacing;
             float y = ((time * speed + seed) % height) - spacing * 2f;
             for (int row = 0; row < 11; row++) {
@@ -878,26 +882,27 @@ final class ArasceRenderer {
         p.setShadowLayer(4f, 0f, 1f, 0xaa000000);
         float unit = Math.min(this.w, this.h);
         if (this.calendarOn && !this.calendarText.isEmpty()) {
-            p.setAlpha(225); p.setTextSize(Math.max(17f, unit * 0.032f));
+            p.setAlpha(225); p.setTextSize(Math.max(17f, unit * 0.032f) * this.infoScale);
             float dateY = this.calendarPosition == 1 ? Math.min(this.h * 0.78f, this.cy + 405f * this.s) : this.h * 0.15f;
             canvas.drawText(this.calendarText, this.w * 0.5f, dateY, p);
         }
         if (this.compassOn) {
-            float y = this.h * 0.73f;
+            float y = this.h * this.compassY;
+            float compassCenterX = this.w * this.compassX;
             p.setTextSize(Math.max(16f, unit * 0.025f));
             if (!this.compassReady) {
                 p.setAlpha(190);
-                canvas.drawText("Компас: " + this.compassStatus, this.cx, y, p);
+                canvas.drawText("Компас: " + this.compassStatus, compassCenterX, y, p);
             } else {
                 if (this.northOn) {
-                    canvas.save(); canvas.translate(this.cx, y - unit * 0.038f); canvas.rotate(this.northAngle);
+                    canvas.save(); canvas.translate(compassCenterX, y - unit * 0.038f); canvas.rotate(this.northAngle);
                     p.setAlpha(110); p.setTextSize(Math.max(14f, unit * 0.022f));
                     canvas.drawText("N", 0f, -unit * 0.065f, p);
                     canvas.drawLine(0f, -unit * 0.035f, 0f, -unit * 0.052f, p);
                     canvas.restore();
                 }
-                canvas.save(); canvas.translate(this.cx, y - unit * 0.038f); canvas.rotate(this.compassAngle);
-                float size = unit * 0.046f;
+                canvas.save(); canvas.translate(compassCenterX, y - unit * 0.038f); canvas.rotate(this.compassAngle);
+                float size = unit * 0.046f * this.compassScale;
                 this.compassPath.reset();
                 this.compassPath.moveTo(0, -size);
                 this.compassPath.lineTo(-size * 0.45f, size * 0.65f);
@@ -905,7 +910,7 @@ final class ArasceRenderer {
                 this.compassPath.lineTo(size * 0.45f, size * 0.65f);
                 this.compassPath.close();
                 p.setAlpha(240); canvas.drawPath(this.compassPath, p); canvas.restore();
-                p.setAlpha(220); canvas.drawText("ԱՐԱՐԱՏ · " + this.compassDistance, this.cx, y + unit * 0.035f, p);
+                p.setAlpha(220); canvas.drawText("ԱՐԱՐԱՏ · " + this.compassDistance, compassCenterX, y + unit * 0.035f * this.compassScale, p);
             }
         }
         if (this.festivalOn && this.festivalToday) {

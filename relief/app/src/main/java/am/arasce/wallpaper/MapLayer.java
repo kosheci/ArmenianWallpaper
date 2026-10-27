@@ -217,6 +217,19 @@ final class MapLayer {
         }
     }
 
+    void drawSelection(Canvas canvas, String selected) {
+        for (int i = 0; i < REGIONS.length; i++) {
+            if (!selected.equals(REGIONS[i] + " · условно")) continue;
+            float x = this.regionXY[i * 2], y = this.regionXY[i * 2 + 1];
+            this.dot.setStyle(Paint.Style.STROKE);
+            this.dot.setStrokeWidth(Math.max(2f, this.label.getTextSize() * 0.15f));
+            this.dot.setColor((this.light & 0x00ffffff) | 0xdc000000);
+            canvas.drawCircle(x, y, Math.max(12f, this.label.getTextSize() * 1.1f), this.dot);
+            this.dot.setStyle(Paint.Style.FILL);
+            break;
+        }
+    }
+
     String findCity(float x, float y, float zoom) {
         float limit = Math.max(52f / Math.max(1f, zoom), this.label.getTextSize() * 4f);
         float best = limit * limit;
