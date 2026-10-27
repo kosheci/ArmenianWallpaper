@@ -61,6 +61,16 @@ final class ArasceRenderer {
     boolean effectsOn = true;
     boolean sparkleOn = true;
     boolean matrixOn = true;
+    int matrixDensity = 100, matrixSpeed = 100, matrixSize = 100;
+    boolean matrixOrdered = false;
+    int calendarPosition = 0;
+    float layoutScale = 1f, layoutX = 0.5f, layoutY = 0.56f;
+    float wakeAt = -100f;
+    void setLayout(float scale, float x, float y) {
+        if (Math.abs(scale-layoutScale)<0.001f && Math.abs(x-layoutX)<0.001f && Math.abs(y-layoutY)<0.001f) return;
+        layoutScale=scale; layoutX=x; layoutY=y;
+        if (w>0 && h>0) setSize((int)w,(int)h);
+    }
     int matrixIntensity = 55;
     private final Paint matrixPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final String MATRIX_LETTERS = "ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖ";
@@ -243,9 +253,9 @@ final class ArasceRenderer {
     void setSize(int i, int i2) {
         this.w = i;
         this.h = i2;
-        this.s = (Math.min(this.w, this.h) / 800.0f) * 0.98f;
-        this.cx = this.w / 2.0f;
-        this.cy = this.h * 0.56f;
+        this.s = (Math.min(this.w, this.h) / 800.0f) * 0.98f * this.layoutScale;
+        this.cx = this.w * this.layoutX;
+        this.cy = this.h * this.layoutY;
         this.parallax = 26.0f * this.s;
         this.vignettePaint.setShader(new RadialGradient(this.cx, this.h * BAKE, Math.max(this.w, this.h) * 0.75f, new int[]{0, 0, -1207959552}, new float[]{0.0f, BAKE, 1.0f}, Shader.TileMode.CLAMP));
         rebuildBackground();
@@ -543,6 +553,12 @@ final class ArasceRenderer {
                 canvas.translate(this.cx - ((f6 * f8) * 0.15f), this.cy - ((f7 * f8) * 0.15f));
                 canvas.scale(Math.max(0.001f, -(float)Math.cos(Math.PI * f4)), 1f);
                 applyMapPerspective(canvas, f6, f7);
+                canvas.save();
+                canvas.translate(0f, 3f * this.s);
+                this.map.setColors(this.palette.dark, this.palette.dark);
+                this.map.drawLines(canvas, 1f, 0f);
+                canvas.restore();
+                this.map.setColors(this.palette.lit, this.palette.light);
                 this.map.drawLines(canvas, 1f, fSin);
                 this.map.drawLabels(canvas, 1f);
                 canvas.restore();
@@ -675,12 +691,17 @@ final class ArasceRenderer {
             }
             canvas.drawRect(0.0f, 0.0f, this.w, this.h, this.vignettePaint);
             drawInfo(canvas);
+            if (this.effectsOn && f - this.wakeAt >= 0f && f - this.wakeAt < 0.9f) {
+                this.flipPaint.setStyle(Paint.Style.FILL); this.flipPaint.setShader(null);
+                this.flipPaint.setColor(0xff000000); this.flipPaint.setAlpha((int)(100f * (1f - (f - this.wakeAt) / 0.9f)));
+                canvas.drawRect(0, 0, this.w, this.h, this.flipPaint);
+            }
         }
     }
 
     private void drawArmenianMatrix(Canvas canvas, float time) {
         Paint p = this.matrixPaint;
-        float spacing = Math.max(20f, this.w / 19f);
+        float spacing = Math.max(20f, this.w / 19f) * this.matrixSize / 100f;
         float height = this.h + spacing * 14f;
         p.setTypeface(Typeface.create("monospace", Typeface.BOLD));
         p.setTextAlign(Paint.Align.CENTER);
@@ -691,18 +712,27 @@ final class ArasceRenderer {
         int cols = (int)Math.ceil(this.w / spacing);
         int ticks = (int)(time * 3.0f);
         for (int col = 0; col < cols; col++) {
-            float speed = spacing * (0.72f + (col * 17 % 13) * 0.045f);
+            if ((col * 37 % 100) >= this.matrixDensity) continue;
+            float speed = spacing * (0.72f + (col * 17 % 13) * 0.045f) * this.matrixSpeed / 100f;
             float seed = ((col * 97) % 173) * spacing;
             float y = ((time * speed + seed) % height) - spacing * 2f;
             for (int row = 0; row < 11; row++) {
                 float py = y - row * spacing;
                 if (py < -spacing || py > this.h + spacing) continue;
-                int index = Math.floorMod(col * 97 + row * 31 + ticks / 3, MATRIX_LETTERS.length());
-                float fade = (11f - row) / 11f;
+                int index = this.matrixOrdered ? Math.floorMod(col * 11 + row, MATRIX_LETTERS.length()) : Math.floorMod(col * 97 + row * 31 + ticks / 9, MATRIX_LETTERS.length());
+                float depth = 0.55f + (col % 4) * 0.15f;
+                float fade = (11f - row) / 11f * depth;
                 int alpha = Math.min(255, (int)((row == 0 ? 230f : 125f * fade) * strength / 100f));
                 p.setColor(row == 0 ? this.palette.light : this.palette.lit);
-                p.setAlpha(alpha);
+                float blend = this.matrixOrdered ? 0f : (time / 3f - (float)Math.floor(time / 3f));
+                float fadeMix = blend < 0.7f ? 0f : (blend - 0.7f) / 0.3f;
+                p.setAlpha((int)(alpha * (1f - fadeMix)));
                 canvas.drawText(MATRIX_LETTERS, index, index + 1, (col + 0.5f) * spacing, py, p);
+                if (fadeMix > 0f) {
+                    int next = (index + 1) % MATRIX_LETTERS.length();
+                    p.setAlpha((int)(alpha * fadeMix));
+                    canvas.drawText(MATRIX_LETTERS, next, next + 1, (col + 0.5f) * spacing, py, p);
+                }
             }
         }
     }
@@ -715,7 +745,8 @@ final class ArasceRenderer {
         float unit = Math.min(this.w, this.h);
         if (this.calendarOn && !this.calendarText.isEmpty()) {
             p.setAlpha(225); p.setTextSize(Math.max(17f, unit * 0.032f));
-            canvas.drawText(this.calendarText, this.cx, this.h * 0.15f, p);
+            float dateY = this.calendarPosition == 1 ? Math.min(this.h * 0.78f, this.cy + 405f * this.s) : this.h * 0.15f;
+            canvas.drawText(this.calendarText, this.w * 0.5f, dateY, p);
         }
         if (this.compassOn) {
             float y = this.h * 0.86f;

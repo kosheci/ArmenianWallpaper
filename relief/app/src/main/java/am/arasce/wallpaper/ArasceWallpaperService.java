@@ -38,6 +38,7 @@ public class ArasceWallpaperService extends WallpaperService {
         private float baseX;
         private float baseY;
         private boolean dayCycle;
+        private boolean nightGold;
         private float downX;
         private float downY;
         private boolean dragging;
@@ -45,6 +46,8 @@ public class ArasceWallpaperService extends WallpaperService {
         private final Choreographer.FrameCallback frame;
         private boolean gestures;
         private boolean effectsEnabled = true;
+        private boolean autoEnergy = true;
+        private long lastEnergyFrame = 0;
         private boolean ripplesEnabled = true;
         private volatile float gx;
         private volatile float gy;
@@ -95,6 +98,7 @@ public class ArasceWallpaperService extends WallpaperService {
                     if (ArasceEngine.this.unlockFlash && ArasceEngine.this.effectsEnabled) {
                         float fNow = ArasceEngine.this.now();
                         ArasceEngine.this.flare = 1.0f;
+                        if (ArasceEngine.this.prefs.getBoolean("wake_fade", true)) ArasceEngine.this.renderer.wakeAt = fNow;
                         ArasceEngine.this.touchAt = fNow;
                         if (ArasceEngine.this.ripplesEnabled) ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow);
                         if (ArasceEngine.this.ripplesEnabled) ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow + 0.25f);
@@ -141,6 +145,13 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.mapOn = this.prefs.getBoolean("map", true);
             this.renderer.matrixOn = this.effectsEnabled && this.prefs.getBoolean("matrix_on", true);
             this.renderer.matrixIntensity = this.prefs.getInt("matrix_intensity", 55);
+            this.renderer.matrixDensity = this.prefs.getInt("matrix_density", 100);
+            this.renderer.matrixSpeed = this.prefs.getInt("matrix_speed", 100);
+            this.renderer.matrixSize = this.prefs.getInt("matrix_size", 100);
+            this.renderer.matrixOrdered = this.prefs.getBoolean("matrix_ordered", false);
+            this.renderer.calendarPosition = this.prefs.getBoolean("calendar_below", false) ? 1 : 0;
+            this.renderer.setLayout(this.prefs.getInt("emblem_size", 100) / 100f, this.prefs.getInt("emblem_x", 50) / 100f, this.prefs.getInt("emblem_y", 56) / 100f);
+            this.autoEnergy = this.prefs.getBoolean("auto_energy", true);
             this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", true);
             this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
             if (!this.renderer.compassOn) this.renderer.compassReady = false;
@@ -153,6 +164,7 @@ public class ArasceWallpaperService extends WallpaperService {
             this.gestures = this.prefs.getBoolean("gestures", true);
             this.unlockFlash = this.prefs.getBoolean("unlock", true);
             this.dayCycle = this.prefs.getBoolean("daycycle", true);
+            this.nightGold = this.prefs.getBoolean("night_gold", false);
             if (!this.gestures) {
                 this.holdReveal = false;
                 this.spinVel = 0.0f;
@@ -359,6 +371,14 @@ public class ArasceWallpaperService extends WallpaperService {
 
         /* JADX INFO: Access modifiers changed from: private */
         public void drawFrame() {
+            long wall = SystemClock.elapsedRealtime();
+            android.os.PowerManager power = (android.os.PowerManager) ArasceWallpaperService.this.getSystemService(Context.POWER_SERVICE);
+            boolean economy = this.autoEnergy && ((power != null && power.isPowerSaveMode()) || (this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20));
+            if (economy && wall - this.lastEnergyFrame < 33) {
+                if (this.visibleNow) this.choreographer.postFrameCallback(this.frame);
+                return;
+            }
+            this.lastEnergyFrame = wall;
             float fNow = now();
             float fMin = this.lastFrameT < 0.0f ? 0.008f : Math.max(0f, Math.min(0.1f, fNow - this.lastFrameT));
             float smoothTilt = 1f - (float)Math.pow(1f - 0.12f, fMin / 0.033f);
@@ -392,9 +412,9 @@ public class ArasceWallpaperService extends WallpaperService {
             this.flare = ((float) Math.exp((-fMin) * 1.3f)) * this.flare;
             this.renderer.flare = this.effectsEnabled ? this.flare : 0f;
             if (fNow - this.lastPaletteT > 20.0f) {
-                this.renderer.setPalette(this.dayCycle ? Palette.forNow() : Palette.DAY);
+                this.renderer.setPalette(this.dayCycle ? Palette.forNow() : (this.nightGold ? Palette.NIGHT : Palette.DAY));
                 this.renderer.updateCalendar();
-                if (this.renderer.batteryOn) updateBattery();
+                updateBattery();
                 this.lastPaletteT = fNow;
             }
             SurfaceHolder surfaceHolder = getSurfaceHolder();

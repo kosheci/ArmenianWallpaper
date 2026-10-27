@@ -83,11 +83,33 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams brightParams = fullWidth(dp(48));
         brightParams.topMargin = dp(8);
         presets.addView(bright, brightParams);
+        Button classic = button("Классика", false);
+        classic.setOnClickListener(v -> applyNamedPreset(0));
+        presets.addView(classic, fullWidth(dp(48)));
+        Button night = button("Ночное золото", false);
+        night.setOnClickListener(v -> applyNamedPreset(1));
+        presets.addView(night, fullWidth(dp(48)));
+        Button matrixStyle = button("Матрица", false);
+        matrixStyle.setOnClickListener(v -> applyNamedPreset(2));
+        presets.addView(matrixStyle, fullWidth(dp(48)));
+        Button saveStyle = button("Сохранить мой стиль", false);
+        saveStyle.setOnClickListener(v -> saveMyStyle());
+        presets.addView(saveStyle, fullWidth(dp(48)));
+        Button loadStyle = button("Вернуть мой стиль", false);
+        loadStyle.setOnClickListener(v -> loadMyStyle());
+        presets.addView(loadStyle, fullWidth(dp(48)));
+        section("Композиция");
+        LinearLayout layout = card();
+        slider(layout, "Размер медальона", "emblem_size", 100, 60, 120, "%");
+        slider(layout, "Положение по горизонтали", "emblem_x", 50, 25, 75, "%");
+        slider(layout, "Положение по вертикали", "emblem_y", 56, 30, 75, "%");
         section("Эффекты");
         LinearLayout effects = card();
         toggle(effects, "Визуальные эффекты", "Общий выключатель анимации, свечения, частиц и наклона", "effects_enabled", true);
         toggle(effects, "Центральная искра", "Небольшой блик в центре аревахача", "sparkle_enabled", true);
         toggle(effects, "Волны от касаний", "Круги света при касании и разблокировке", "ripples_enabled", true);
+        toggle(effects, "Плавное пробуждение", "Мягкое появление при разблокировке", "wake_fade", true);
+        toggle(effects, "Автоматическая экономия", "Около 30 кадров в секунду при заряде до 20% или системной экономии", "auto_energy", true);
         section("Движение");
         LinearLayout linearLayoutCard = card();
         toggle(linearLayoutCard, "Объёмный наклон 3D", "Эмблема поворачивается в перспективе при наклоне телефона", "perspective", true);
@@ -102,9 +124,17 @@ public class SettingsActivity extends Activity {
         LinearLayout matrix = card();
         toggle(matrix, "Буквы Матрицы", "Золотой дождь из букв армянского алфавита в цвете обоев", "matrix_on", true);
         slider(matrix, "Яркость букв", "matrix_intensity", 55, 0, 100, "%");
+        slider(matrix, "Плотность букв", "matrix_density", 100, 0, 100, "%");
+        slider(matrix, "Скорость дождя", "matrix_speed", 100, 0, 200, "%");
+        slider(matrix, "Размер букв", "matrix_size", 100, 60, 160, "%");
+        toggle(matrix, "Алфавит по порядку", "Стабильная последовательность букв вместо случайной смены", "matrix_ordered", false);
         section("Арарат и календарь");
         LinearLayout heritage = card();
         toggle(heritage, "Армянский календарь", "Традиционный 365-дневный календарь, летосчисление с 552 года", "armenian_calendar", true);
+        toggle(heritage, "Календарь под медальоном", "Выключено — сверху экрана", "calendar_below", false);
+        TextView compassState = text(compassStatusText(), 13, TEXT_DIM);
+        compassState.setPadding(dp(4), dp(6), dp(4), dp(6));
+        heritage.addView(compassState);
         toggle(heritage, "Компас на Арарат", "Нужны компас телефона и недавно обновлённое местоположение", "ararat_compass", false);
         Button locate = button("Разрешить и обновить местоположение", false);
         locate.setOnClickListener(v -> requestAraratLocation());
@@ -139,6 +169,58 @@ public class SettingsActivity extends Activity {
     }
 
     /* JADX INFO: Access modifiers changed from: private */
+    private String compassStatusText() {
+        if (!prefs.getBoolean("ararat_compass", false)) return "Компас: выключен";
+        android.hardware.SensorManager sm = (android.hardware.SensorManager)getSystemService(SENSOR_SERVICE);
+        if (sm == null || sm.getDefaultSensor(android.hardware.Sensor.TYPE_ROTATION_VECTOR) == null) return "Компас: датчик недоступен";
+        long t = prefs.getLong("ararat_location_time", 0L);
+        return t > 0 && System.currentTimeMillis() - t <= 86400000L
+                ? "Компас: местоположение получено; проверьте калибровку" : "Компас: обновите местоположение";
+    }
+
+    private void applyNamedPreset(int style) {
+        prefs.edit().putBoolean("effects_enabled", true)
+            .putBoolean("matrix_on", style == 2).putBoolean("daycycle", style != 1).putBoolean("night_gold", style == 1)
+            .putBoolean("rays", style == 2).putBoolean("nebula", style != 0)
+            .putBoolean("sheen", true).putInt("speed", style == 0 ? 45 : style == 1 ? 35 : 80)
+            .putInt("motes", style == 0 ? 20 : style == 1 ? 30 : 45)
+            .putInt("matrix_intensity", style == 2 ? 55 : 25).apply();
+        build();
+    }
+
+    private static final String[] STYLE_KEYS = {"effects_enabled","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
+        "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
+        "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
+        "celestial","battery","sheen","rays","nebula","map","gestures","unlock"};
+    private void saveMyStyle() {
+        try {
+            org.json.JSONObject data = new org.json.JSONObject();
+            java.util.Map<String, ?> all = prefs.getAll();
+            for (String key : STYLE_KEYS) if (all.containsKey(key)) data.put(key, all.get(key));
+            prefs.edit().putString("user_style", data.toString()).apply();
+            Toast.makeText(this, "Ваш стиль сохранён", Toast.LENGTH_SHORT).show();
+        } catch (org.json.JSONException e) {
+            Toast.makeText(this, "Не удалось сохранить стиль", Toast.LENGTH_SHORT).show();
+        }
+    }
+    private void loadMyStyle() {
+        String raw = prefs.getString("user_style", null);
+        if (raw == null) { Toast.makeText(this, "Сначала сохраните свой стиль", Toast.LENGTH_SHORT).show(); return; }
+        try {
+            org.json.JSONObject data = new org.json.JSONObject(raw);
+            android.content.SharedPreferences.Editor e = prefs.edit();
+            for (String key : STYLE_KEYS) {
+                if (!data.has(key)) { e.remove(key); continue; }
+                Object value = data.get(key);
+                if (value instanceof Boolean) e.putBoolean(key, (Boolean)value);
+                else if (value instanceof Number) e.putInt(key, ((Number)value).intValue());
+            }
+            e.apply(); build(); Toast.makeText(this, "Ваш стиль восстановлен", Toast.LENGTH_SHORT).show();
+        } catch (org.json.JSONException e) {
+            Toast.makeText(this, "Не удалось восстановить стиль", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void applyPreset(boolean expressive) {
         prefs.edit().putInt("parallax", expressive ? 100 : 70)
             .putInt("speed", expressive ? 100 : 65)
