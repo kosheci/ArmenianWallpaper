@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -65,7 +65,27 @@ jobs:
           gradle-version: '8.7'
       - name: Build Android APK
         working-directory: arasce14
-        run: gradle --no-daemon --stacktrace assembleDebug
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --console=plain assembleDebug 2>&1 | tee ../build-log.txt
+      - name: Summarize compilation errors
+        if: failure()
+        shell: bash
+        run: |
+          echo '## Astuats-Arasce 1.4 — причина ошибки сборки' >> "$GITHUB_STEP_SUMMARY"
+          echo '### Найденные сообщения компилятора' >> "$GITHUB_STEP_SUMMARY"
+          echo '\`\`\`text' >> "$GITHUB_STEP_SUMMARY"
+          grep -E -A 8 -B 3 '(^FAILURE:|^\* What went wrong:|^> | error:|^e: |Execution failed for task|Could not |A problem occurred|Manifest merger failed|Android resource linking failed)' build-log.txt | head -160 >> "$GITHUB_STEP_SUMMARY" || true
+          echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Полный журнал доступен как build-log.txt в артефактах.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload build failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arasce-1.4-build-error-log
+          path: build-log.txt
+          if-no-files-found: warn
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
