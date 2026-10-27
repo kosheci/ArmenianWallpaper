@@ -309,7 +309,13 @@ public class SettingsActivity extends Activity {
                 return;
             }
             Location last = lm.getLastKnownLocation(provider);
-            if (last != null && System.currentTimeMillis() - last.getTime() < 86400000L) {
+            if (!LocationManager.GPS_PROVIDER.equals(provider)
+                    && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    && lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                Location gpsLast = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (gpsLast != null && (last == null || gpsLast.getTime() > last.getTime())) last = gpsLast;
+            }
+            if (last != null && last.getTime() > 0 && System.currentTimeMillis() - last.getTime() >= 0 && System.currentTimeMillis() - last.getTime() < 86400000L) {
                 saveAraratLocation(last);
                 Toast.makeText(this, "Компас включён; уточняем местоположение", Toast.LENGTH_SHORT).show();
             } else {

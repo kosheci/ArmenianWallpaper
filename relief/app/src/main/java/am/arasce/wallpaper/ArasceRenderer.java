@@ -94,6 +94,7 @@ final class ArasceRenderer {
     boolean compassOn = false;
     volatile boolean compassReady = false;
     volatile float compassAngle = 0f;
+    volatile String compassDistance = "";
     String compassStatus = "Обновите местоположение";
     private String calendarText = "";
     private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -733,7 +734,13 @@ final class ArasceRenderer {
                     this.infoPaint.setTextSize(font); this.infoPaint.setAlpha(225);
                     for (int i=0; i<5; i++) {
                         int n = this.selectedGavarPage * 5 + i;
-                        if (n < names.length) canvas.drawText((n+1) + ". " + names[n], this.w*0.5f, top + line*(2+i), this.infoPaint);
+                        if (n < names.length) {
+                            String label = (n+1) + ". " + names[n];
+                            float width = this.infoPaint.measureText(label);
+                            this.infoPaint.setTextScaleX(width > this.w * 0.8f ? this.w * 0.8f / width : 1f);
+                            canvas.drawText(label, this.w*0.5f, top + line*(2+i), this.infoPaint);
+                            this.infoPaint.setTextScaleX(1f);
+                        }
                     }
                     this.infoPaint.setTextSize(font * 0.78f); this.infoPaint.setAlpha(175);
                     canvas.drawText("Стр. " + (this.selectedGavarPage+1) + "/" + pages + " · нажмите точку снова", this.w*0.5f, top + line*7.35f, this.infoPaint);
@@ -848,7 +855,7 @@ final class ArasceRenderer {
             this.selectedGavarPage = (this.selectedGavarPage + 1) % pages;
         } else this.selectedGavarPage = 0;
         this.selectedMapCity = selected;
-        this.selectedUntil = time + (region >= 0 ? 12f : 3.5f);
+        this.selectedUntil = time + (region >= 0 ? 18f : 3.5f);
     }
 
     private void drawInfo(Canvas canvas) {
@@ -885,7 +892,7 @@ final class ArasceRenderer {
                 this.compassPath.lineTo(size * 0.45f, size * 0.65f);
                 this.compassPath.close();
                 p.setAlpha(240); canvas.drawPath(this.compassPath, p); canvas.restore();
-                p.setAlpha(220); canvas.drawText("ԱՐԱՐԱՏ", this.cx, y + unit * 0.035f, p);
+                p.setAlpha(220); canvas.drawText("ԱՐԱՐԱՏ · " + this.compassDistance, this.cx, y + unit * 0.035f, p);
             }
         }
         if (this.festivalOn && this.festivalToday) {

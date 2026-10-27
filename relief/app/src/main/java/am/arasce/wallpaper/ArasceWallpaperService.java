@@ -374,7 +374,7 @@ public class ArasceWallpaperService extends WallpaperService {
             }
             if (!this.renderer.compassOn) return;
             long at = this.prefs.getLong("ararat_location_time", 0L);
-            if (at <= 0 || System.currentTimeMillis() - at > 86400000L) {
+            if (at <= 0 || System.currentTimeMillis() - at < 0 || System.currentTimeMillis() - at > 86400000L) {
                 this.renderer.compassReady = false;
                 this.renderer.compassStatus = at <= 0 ? "обновите местоположение" : "местоположение устарело";
                 return;
@@ -384,6 +384,7 @@ public class ArasceWallpaperService extends WallpaperService {
             if (lat != this.cachedLat || lon != this.cachedLon || nowMs - this.cachedBearingAt > 60000L) {
                 Location.distanceBetween(lat, lon, 39.70194, 44.29833, this.compassBearingResult);
                 this.cachedAraratBearing = this.compassBearingResult[1];
+                this.renderer.compassDistance = String.format(java.util.Locale.ROOT, "%.0f км", this.compassBearingResult[0] / 1000f);
                 this.cachedDeclination = new GeomagneticField(lat, lon, 0f, nowMs).getDeclination();
                 this.cachedLat = lat; this.cachedLon = lon; this.cachedBearingAt = nowMs;
             }
