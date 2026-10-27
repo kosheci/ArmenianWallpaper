@@ -136,6 +136,22 @@ final class MapLayer {
         }
     }
 
+    String findCity(float x, float y) {
+        float limit = Math.max(26f, this.label.getTextSize() * 3f);
+        float best = limit * limit;
+        String name = "";
+        for (int i = 0; i < CITIES.length; i++) {
+            float dx = x - this.cityXY[i*2], dy = y - this.cityXY[i*2+1];
+            float distance = dx*dx + dy*dy;
+            if (distance < best) { best = distance; name = CITIES[i]; }
+        }
+        float ax = (44.29833f - LON_C) * COS * this.k;
+        float ay = -(39.70194f - LAT_C) * this.k;
+        float dx = x-ax, dy = y-ay;
+        if (dx*dx + dy*dy < best) name = "ԱՐԱՐԱՏ";
+        return name;
+    }
+
     private static int clamp(int i) {
         if (i < 0) {
             return 0;

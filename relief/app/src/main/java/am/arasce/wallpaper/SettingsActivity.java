@@ -110,6 +110,7 @@ public class SettingsActivity extends Activity {
         toggle(effects, "Волны от касаний", "Круги света при касании и разблокировке", "ripples_enabled", true);
         toggle(effects, "Плавное пробуждение", "Мягкое появление при разблокировке", "wake_fade", true);
         toggle(effects, "Автоматическая экономия", "Около 30 кадров в секунду при заряде до 20% или системной экономии", "auto_energy", true);
+        toggle(effects, "Тихий ночной режим", "С 22:00 до 07:00 движение и яркость букв уменьшаются", "quiet_night", false);
         section("Движение");
         LinearLayout linearLayoutCard = card();
         toggle(linearLayoutCard, "Объёмный наклон 3D", "Эмблема поворачивается в перспективе при наклоне телефона", "perspective", true);
@@ -123,6 +124,7 @@ public class SettingsActivity extends Activity {
         section("Армянская матрица");
         LinearLayout matrix = card();
         toggle(matrix, "Буквы Матрицы", "Золотой дождь из букв армянского алфавита в цвете обоев", "matrix_on", true);
+        toggle(matrix, "Кольцо армянских букв", "Буквы вокруг медальона", "letter_halo", false);
         slider(matrix, "Яркость букв", "matrix_intensity", 55, 0, 100, "%");
         slider(matrix, "Плотность букв", "matrix_density", 100, 0, 100, "%");
         slider(matrix, "Скорость дождя", "matrix_speed", 100, 0, 200, "%");
@@ -131,11 +133,13 @@ public class SettingsActivity extends Activity {
         section("Арарат и календарь");
         LinearLayout heritage = card();
         toggle(heritage, "Армянский календарь", "Традиционный 365-дневный календарь, летосчисление с 552 года", "armenian_calendar", true);
+        toggle(heritage, "Праздник Навасард", "Показывать название в первый день традиционного года", "navasard_festival", false);
         toggle(heritage, "Календарь под медальоном", "Выключено — сверху экрана", "calendar_below", false);
         TextView compassState = text(compassStatusText(), 13, TEXT_DIM);
         compassState.setPadding(dp(4), dp(6), dp(4), dp(6));
         heritage.addView(compassState);
         toggle(heritage, "Компас на Арарат", "Нужны компас телефона и недавно обновлённое местоположение", "ararat_compass", false);
+        toggle(heritage, "Указатель севера", "Дополнительная метка N рядом со стрелкой Арарата", "north_marker", true);
         Button locate = button("Разрешить и обновить местоположение", false);
         locate.setOnClickListener(v -> requestAraratLocation());
         heritage.addView(locate, fullWidth(dp(52)));
@@ -148,6 +152,8 @@ public class SettingsActivity extends Activity {
         toggle(linearLayoutCard3, "Блеск металла", "Блик скользит по золоту, когда вы наклоняете телефон", "sheen", true);
         toggle(linearLayoutCard3, "Лучи из центра", "Тонкие лучи света вокруг аревахача", "rays", false);
         toggle(linearLayoutCard3, "Туманность", "Глубокие облака синего, фиолетового и бирюзового на фоне", "nebula", true);
+        toggle(linearLayoutCard3, "Силуэт Арарата", "Горизонтальный силуэт меняет яркость в течение суток", "ararat_mountain", true);
+        toggle(linearLayoutCard3, "Касания карты", "Коснитесь отметки города или Арарата на открытой карте", "map_touch", true);
         toggle(linearLayoutCard3, "Карта державы Тиграна", "Карта за эмблемой. Показывается и скрывается двойным касанием.", "map", true);
         section("Касания");
         LinearLayout linearLayoutCard4 = card();
@@ -191,7 +197,7 @@ public class SettingsActivity extends Activity {
     private static final String[] STYLE_KEYS = {"effects_enabled","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
         "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
         "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
-        "celestial","battery","sheen","rays","nebula","map","gestures","unlock"};
+        "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch"};
     private void saveMyStyle() {
         try {
             org.json.JSONObject data = new org.json.JSONObject();

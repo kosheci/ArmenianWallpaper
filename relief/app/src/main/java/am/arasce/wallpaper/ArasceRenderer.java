@@ -60,6 +60,15 @@ final class ArasceRenderer {
     boolean mapOn = true;
     boolean effectsOn = true;
     boolean sparkleOn = true;
+    boolean mountainOn = true, letterHaloOn = false, festivalOn = false, festivalToday = false;
+    boolean northOn = true, quietActive = false, mapTouchOn = true;
+    float northAngle = 0f;
+    private String selectedMapCity = "";
+    private float selectedUntil = -100f;
+    private final Paint mountainPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path mountainPath = new Path();
+    private final Path haloPath = new Path();
+    private final Paint haloPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     boolean matrixOn = true;
     int matrixDensity = 100, matrixSpeed = 100, matrixSize = 100;
     boolean matrixOrdered = false;
@@ -82,7 +91,7 @@ final class ArasceRenderer {
     private String calendarText = "";
     private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path compassPath = new Path();
-    void updateCalendar() { calendarText = ArmenianCalendar.format(java.time.LocalDate.now()); }
+    void updateCalendar() { calendarText = ArmenianCalendar.format(java.time.LocalDate.now()); festivalToday = calendarText.startsWith("1 Նավասարդ"); }
     boolean perspectiveOn = true;
     private final Camera perspectiveCamera = new Camera();
     private final Matrix perspectiveMatrix = new Matrix();
@@ -526,7 +535,7 @@ final class ArasceRenderer {
         if (this.w != 0.0f) {
             float fMin = this.lastT < 0.0f ? 0.0f : Math.min(0.1f, f - this.lastT);
             this.lastT = f;
-            this.rotTime = (fMin * this.speedMul) + this.rotTime;
+            this.rotTime = (fMin * this.speedMul * (this.quietActive ? 0.3f : 1f)) + this.rotTime;
             float f6 = f2 * this.parallaxMul;
             float f7 = f3 * this.parallaxMul;
             float f8 = this.parallax;
@@ -547,6 +556,7 @@ final class ArasceRenderer {
                 canvas.restore();
             }
             drawFlipDisc(canvas, f4);
+            if (this.effectsOn && this.mountainOn) drawMountain(canvas);
             if (this.matrixOn) drawArmenianMatrix(canvas, f);
             if (this.mapOn && f4 >= 0.5f) {
                 canvas.save();
@@ -569,6 +579,7 @@ final class ArasceRenderer {
                 canvas.scale(Math.max(0.001f, (float)Math.cos(Math.PI * f4)), 1f);
                 canvas.translate(-this.cx, -this.cy);
             if (this.celestialOn) drawCelestial(canvas, f, f6, f7);
+            if (this.effectsOn && this.letterHaloOn) drawLetterHalo(canvas, f, f6, f7);
             if (this.perspectiveOn) {
                 canvas.save();
                 canvas.translate(this.cx, this.cy);
@@ -691,6 +702,13 @@ final class ArasceRenderer {
             }
             canvas.drawRect(0.0f, 0.0f, this.w, this.h, this.vignettePaint);
             drawInfo(canvas);
+            if (this.mapTouchOn && f4 > 0.97f && f < this.selectedUntil && !this.selectedMapCity.isEmpty()) {
+                this.infoPaint.setTextAlign(Paint.Align.CENTER); this.infoPaint.setTypeface(Typeface.create("serif", Typeface.BOLD));
+                this.infoPaint.setTextSize(Math.max(18f, this.w * 0.038f)); this.infoPaint.setColor(this.palette.light); this.infoPaint.setAlpha(240);
+                this.infoPaint.setShadowLayer(5f, 0f, 1f, 0xff000000);
+                canvas.drawText(this.selectedMapCity, this.cx, Math.min(this.h * 0.8f, this.cy + this.s * 390f), this.infoPaint);
+                this.infoPaint.clearShadowLayer();
+            }
             if (this.effectsOn && f - this.wakeAt >= 0f && f - this.wakeAt < 0.9f) {
                 this.flipPaint.setStyle(Paint.Style.FILL); this.flipPaint.setShader(null);
                 this.flipPaint.setColor(0xff000000); this.flipPaint.setAlpha((int)(100f * (1f - (f - this.wakeAt) / 0.9f)));
@@ -709,11 +727,12 @@ final class ArasceRenderer {
         p.setStyle(Paint.Style.FILL);
         p.setShader(null);
         int strength = Math.max(0, Math.min(100, this.matrixIntensity));
+        if (this.quietActive) strength = strength * 35 / 100;
         int cols = (int)Math.ceil(this.w / spacing);
         int ticks = (int)(time * 3.0f);
         for (int col = 0; col < cols; col++) {
             if ((col * 37 % 100) >= this.matrixDensity) continue;
-            float speed = spacing * (0.72f + (col * 17 % 13) * 0.045f) * this.matrixSpeed / 100f;
+            float speed = spacing * (0.72f + (col * 17 % 13) * 0.045f) * this.matrixSpeed / 100f * (this.quietActive ? 0.3f : 1f);
             float seed = ((col * 97) % 173) * spacing;
             float y = ((time * speed + seed) % height) - spacing * 2f;
             for (int row = 0; row < 11; row++) {
@@ -737,6 +756,59 @@ final class ArasceRenderer {
         }
     }
 
+    private void drawMountain(Canvas canvas) {
+        Paint p = this.mountainPaint;
+        p.setShader(null); p.setStyle(Paint.Style.FILL);
+        java.util.Calendar clock = java.util.Calendar.getInstance();
+        float hour = clock.get(java.util.Calendar.HOUR_OF_DAY) + clock.get(java.util.Calendar.MINUTE)/60f;
+        float light = Math.max(0.15f, 1f - Math.min(1f, Math.abs(hour - 6.5f) / 5f) * 0.75f);
+        p.setColor(this.palette.mid); p.setAlpha((int)((this.quietActive ? 25 : 60) * light));
+        this.mountainPath.reset();
+        this.mountainPath.moveTo(0, this.h);
+        this.mountainPath.lineTo(0, this.h * 0.82f);
+        this.mountainPath.lineTo(this.w * 0.18f, this.h * 0.78f);
+        this.mountainPath.lineTo(this.w * 0.39f, this.h * 0.67f);
+        this.mountainPath.lineTo(this.w * 0.48f, this.h * 0.71f);
+        this.mountainPath.lineTo(this.w * 0.60f, this.h * 0.77f);
+        this.mountainPath.lineTo(this.w * 0.70f, this.h * 0.72f);
+        this.mountainPath.lineTo(this.w * 0.87f, this.h * 0.81f);
+        this.mountainPath.lineTo(this.w, this.h * 0.83f);
+        this.mountainPath.lineTo(this.w, this.h); this.mountainPath.close();
+        canvas.drawPath(this.mountainPath, p);
+    }
+
+    private void drawLetterHalo(Canvas canvas, float time, float tx, float ty) {
+        layer(canvas, tx, ty, 0.2f);
+        canvas.rotate(time * 0.6f);
+        this.haloPath.reset(); this.haloPath.addCircle(0f, 0f, 337f, Path.Direction.CW);
+        this.haloPaint.setStyle(Paint.Style.FILL);
+        this.haloPaint.setTypeface(Typeface.create("serif", Typeface.NORMAL));
+        this.haloPaint.setTextSize(12.5f);
+        this.haloPaint.setColor(this.palette.light);
+        this.haloPaint.setAlpha(this.quietActive ? 55 : 145);
+        canvas.drawTextOnPath(MATRIX_LETTERS, this.haloPath, 0f, 0f, this.haloPaint);
+        canvas.restore();
+    }
+
+    void selectMapAt(float x, float y, float tx, float ty, float time) {
+        if (!this.mapTouchOn) return;
+        float f6 = tx * this.parallaxMul, f7 = ty * this.parallaxMul;
+        float[] point = {x - (this.cx - f6 * this.parallax * 0.15f),
+                         y - (this.cy - f7 * this.parallax * 0.15f)};
+        if (this.perspectiveOn) {
+            this.perspectiveCamera.save();
+            this.perspectiveCamera.setLocation(0f, 0f, -16f);
+            this.perspectiveCamera.rotateX(f7 * 8f);
+            this.perspectiveCamera.rotateY(-f6 * 8f);
+            this.perspectiveCamera.getMatrix(this.perspectiveMatrix);
+            this.perspectiveCamera.restore();
+            Matrix inverse = new Matrix();
+            if (this.perspectiveMatrix.invert(inverse)) inverse.mapPoints(point);
+        }
+        this.selectedMapCity = this.map.findCity(point[0], point[1]);
+        this.selectedUntil = time + 3.5f;
+    }
+
     private void drawInfo(Canvas canvas) {
         Paint p = this.infoPaint;
         p.setShader(null); p.setStyle(Paint.Style.FILL); p.setColor(this.palette.light);
@@ -755,6 +827,13 @@ final class ArasceRenderer {
                 p.setAlpha(190);
                 canvas.drawText("Компас: " + this.compassStatus, this.cx, y, p);
             } else {
+                if (this.northOn) {
+                    canvas.save(); canvas.translate(this.cx, y - unit * 0.038f); canvas.rotate(this.northAngle);
+                    p.setAlpha(110); p.setTextSize(Math.max(14f, unit * 0.022f));
+                    canvas.drawText("N", 0f, -unit * 0.065f, p);
+                    canvas.drawLine(0f, -unit * 0.035f, 0f, -unit * 0.052f, p);
+                    canvas.restore();
+                }
                 canvas.save(); canvas.translate(this.cx, y - unit * 0.038f); canvas.rotate(this.compassAngle);
                 float size = unit * 0.033f;
                 this.compassPath.reset();
@@ -766,6 +845,10 @@ final class ArasceRenderer {
                 p.setAlpha(240); canvas.drawPath(this.compassPath, p); canvas.restore();
                 p.setAlpha(220); canvas.drawText("ԱՐԱՐԱՏ", this.cx, y + unit * 0.035f, p);
             }
+        }
+        if (this.festivalOn && this.festivalToday) {
+            p.setAlpha(this.quietActive ? 125 : 230); p.setTextSize(Math.max(16f, unit * 0.028f));
+            canvas.drawText("ՆԱՎԱՍԱՐԴ · Հայոց նոր տարի", this.w * 0.5f, this.h * 0.20f, p);
         }
         p.clearShadowLayer();
     }

@@ -153,6 +153,11 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.setLayout(this.prefs.getInt("emblem_size", 100) / 100f, this.prefs.getInt("emblem_x", 50) / 100f, this.prefs.getInt("emblem_y", 56) / 100f);
             this.autoEnergy = this.prefs.getBoolean("auto_energy", true);
             this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", true);
+            this.renderer.mountainOn = this.prefs.getBoolean("ararat_mountain", true);
+            this.renderer.letterHaloOn = this.prefs.getBoolean("letter_halo", false);
+            this.renderer.northOn = this.prefs.getBoolean("north_marker", true);
+            this.renderer.festivalOn = this.prefs.getBoolean("navasard_festival", false);
+            this.renderer.mapTouchOn = this.prefs.getBoolean("map_touch", true);
             this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
             if (!this.renderer.compassOn) this.renderer.compassReady = false;
             this.renderer.compassStatus = this.rotationSensor == null ? "датчик недоступен" : "обновите местоположение";
@@ -308,6 +313,8 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.lastTapY = f2;
                 this.touchAt = fNow;
                 if (this.gestures) {
+                    if (!z2 && this.holdReveal && this.reveal > 0.97f && this.renderer.mapOn)
+                        this.renderer.selectMapAt(f, f2, this.tiltX, this.tiltY, fNow);
                     if (!z2 && this.ripplesEnabled) this.renderer.addRipple(f, f2, fNow);
                     if (z2 && this.renderer.mapOn) {
                         this.holdReveal = !this.holdReveal;
@@ -348,6 +355,7 @@ public class ArasceWallpaperService extends WallpaperService {
             GeomagneticField field = new GeomagneticField(lat, lon, 0f, System.currentTimeMillis());
             float trueHeading = (float)Math.toDegrees(this.orientation[0]) + field.getDeclination();
             this.renderer.compassAngle = result[1] - trueHeading;
+            this.renderer.northAngle = -trueHeading;
             this.renderer.compassReady = true;
         }
 
@@ -373,7 +381,9 @@ public class ArasceWallpaperService extends WallpaperService {
         public void drawFrame() {
             long wall = SystemClock.elapsedRealtime();
             android.os.PowerManager power = (android.os.PowerManager) ArasceWallpaperService.this.getSystemService(Context.POWER_SERVICE);
-            boolean economy = this.autoEnergy && ((power != null && power.isPowerSaveMode()) || (this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20));
+            int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+            this.renderer.quietActive = this.effectsEnabled && this.prefs.getBoolean("quiet_night", false) && (hour >= 22 || hour < 7);
+            boolean economy = this.renderer.quietActive || (this.autoEnergy && ((power != null && power.isPowerSaveMode()) || (this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20)));
             if (economy && wall - this.lastEnergyFrame < 33) {
                 if (this.visibleNow) this.choreographer.postFrameCallback(this.frame);
                 return;
