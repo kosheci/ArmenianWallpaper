@@ -1,0 +1,42 @@
+name: Build Astuats Arasce Luys 3D
+on:
+  push:
+    branches: [arasce-screen-calendar]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Check battery and lunar calculations
+        run: |
+          mkdir -p /tmp/luys-check
+          javac -d /tmp/luys-check relief/app/src/main/java/am/arasce/wallpaper/VisualEffects14.java relief/checks/Check.java
+          java -cp /tmp/luys-check Check
+          javac -d /tmp/luys-check relief/app/src/main/java/am/arasce/wallpaper/ArmenianCalendar.java relief/checks/CalendarCheck.java
+          java -cp /tmp/luys-check am.arasce.wallpaper.CalendarCheck
+          javac -d /tmp/luys-check relief/app/src/main/java/am/arasce/wallpaper/ArmenianCalendar.java relief/checks/HolidayCheck.java
+          java -cp /tmp/luys-check am.arasce.wallpaper.HolidayCheck
+      - name: Build APK
+        working-directory: relief
+        run: gradle --no-daemon --console=plain assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Astuats-Arasce-Screen-Calendar-apk
+          path: relief/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - name: Save official Android signing tool
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apksigner-tool
+          path: /usr/local/lib/android/sdk/build-tools/35.0.0/lib/apksigner.jar
+          if-no-files-found: error

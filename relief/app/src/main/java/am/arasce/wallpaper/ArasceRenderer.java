@@ -62,6 +62,9 @@ final class ArasceRenderer {
     boolean sparkleOn = true;
     boolean mountainOn = true, letterHaloOn = false, festivalOn = false, festivalToday = false;
     boolean northOn = true, quietActive = false, mapTouchOn = true;
+    boolean churchHolidaysOn = false, fpsOn = false;
+    float fpsValue = 0f;
+    private String churchHolidayText = "";
     float northAngle = 0f;
     private String selectedMapCity = "";
     private float selectedUntil = -100f;
@@ -91,7 +94,7 @@ final class ArasceRenderer {
     private String calendarText = "";
     private final Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path compassPath = new Path();
-    void updateCalendar() { calendarText = ArmenianCalendar.format(java.time.LocalDate.now()); festivalToday = calendarText.startsWith("1 Նավասարդ"); }
+    void updateCalendar() { java.time.LocalDate today = java.time.LocalDate.now(); calendarText = ArmenianCalendar.format(today); festivalToday = calendarText.startsWith("1 Նավասարդ"); churchHolidayText = ArmenianCalendar.churchHoliday(today); }
     boolean perspectiveOn = true;
     private final Camera perspectiveCamera = new Camera();
     private final Matrix perspectiveMatrix = new Matrix();
@@ -540,6 +543,7 @@ final class ArasceRenderer {
             float f7 = f3 * this.parallaxMul;
             float f8 = this.parallax;
             float fMax = Math.max(f4, this.flare);
+            if (this.effectsOn && !this.quietActive && ((this.festivalOn && this.festivalToday) || (this.churchHolidaysOn && !this.churchHolidayText.isEmpty()))) fMax = Math.max(fMax, 0.16f);
             float fSin = this.effectsOn ? BAKE + (BAKE * ((float) Math.sin(1.2f * f))) : 0f;
             this.sheenAngle = 35.0f + (55.0f * f6);
             this.sheenOffset = (260.0f * f7) + (((float) Math.sin(0.15f * f)) * 80.0f);
@@ -849,6 +853,14 @@ final class ArasceRenderer {
         if (this.festivalOn && this.festivalToday) {
             p.setAlpha(this.quietActive ? 125 : 230); p.setTextSize(Math.max(16f, unit * 0.028f));
             canvas.drawText("ՆԱՎԱՍԱՐԴ · Հայոց նոր տարի", this.w * 0.5f, this.h * 0.20f, p);
+        }
+        if (this.churchHolidaysOn && !this.churchHolidayText.isEmpty()) {
+            p.setAlpha(this.quietActive ? 125 : 230); p.setTextSize(Math.max(16f, unit * 0.028f));
+            canvas.drawText(this.churchHolidayText, this.w * 0.5f, this.h * 0.23f, p);
+        }
+        if (this.fpsOn) {
+            p.setAlpha(210); p.setTextAlign(Paint.Align.LEFT); p.setTextSize(Math.max(16f, unit * 0.026f));
+            canvas.drawText(String.format(java.util.Locale.ROOT, "%.0f FPS (кадры приложения)", this.fpsValue), unit * 0.025f, this.h * 0.055f, p);
         }
         p.clearShadowLayer();
     }

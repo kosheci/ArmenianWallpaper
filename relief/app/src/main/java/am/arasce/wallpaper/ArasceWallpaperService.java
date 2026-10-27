@@ -34,6 +34,8 @@ public class ArasceWallpaperService extends WallpaperService {
         private final float[] rotationMatrix = new float[9];
         private final float[] remappedMatrix = new float[9];
         private final float[] orientation = new float[3];
+        private long fpsStartMs = 0L;
+        private int fpsFrames = 0;
         private boolean baseSet;
         private float baseX;
         private float baseY;
@@ -157,6 +159,8 @@ public class ArasceWallpaperService extends WallpaperService {
             this.renderer.letterHaloOn = this.prefs.getBoolean("letter_halo", false);
             this.renderer.northOn = this.prefs.getBoolean("north_marker", true);
             this.renderer.festivalOn = this.prefs.getBoolean("navasard_festival", false);
+            this.renderer.churchHolidaysOn = this.prefs.getBoolean("church_holidays", false);
+            this.renderer.fpsOn = this.prefs.getBoolean("fps_display", false);
             this.renderer.mapTouchOn = this.prefs.getBoolean("map_touch", true);
             this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
             if (!this.renderer.compassOn) this.renderer.compassReady = false;
@@ -174,7 +178,23 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.holdReveal = false;
                 this.spinVel = 0.0f;
             }
+            if (isLockOnly()) {
+                if (this.prefs.getBoolean("lock_no_rain", false)) this.renderer.matrixOn = false;
+                if (this.prefs.getBoolean("lock_hide_calendar", false)) this.renderer.calendarOn = false;
+            }
             this.lastPaletteT = -100.0f;
+        }
+
+        private boolean isLockOnly() {
+            if (Build.VERSION.SDK_INT < 34 || isPreview()) return false;
+            int flags = getWallpaperFlags();
+            return (flags & android.app.WallpaperManager.FLAG_LOCK) != 0
+                && (flags & android.app.WallpaperManager.FLAG_SYSTEM) == 0;
+        }
+
+        @Override public void onWallpaperFlagsChanged(int flags) {
+            super.onWallpaperFlagsChanged(flags);
+            applySettings();
         }
 
         private void updateBattery() {
@@ -382,7 +402,7 @@ public class ArasceWallpaperService extends WallpaperService {
             long wall = SystemClock.elapsedRealtime();
             android.os.PowerManager power = (android.os.PowerManager) ArasceWallpaperService.this.getSystemService(Context.POWER_SERVICE);
             int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
-            this.renderer.quietActive = this.effectsEnabled && this.prefs.getBoolean("quiet_night", false) && (hour >= 22 || hour < 7);
+            this.renderer.quietActive = this.effectsEnabled && ((this.prefs.getBoolean("quiet_night", false) && (hour >= 22 || hour < 7)) || (isLockOnly() && this.prefs.getBoolean("lock_quiet", false)));
             boolean economy = this.renderer.quietActive || (this.autoEnergy && ((power != null && power.isPowerSaveMode()) || (this.renderer.batteryPercent >= 0 && this.renderer.batteryPercent <= 20)));
             if (economy && wall - this.lastEnergyFrame < 33) {
                 if (this.visibleNow) this.choreographer.postFrameCallback(this.frame);
@@ -440,6 +460,15 @@ public class ArasceWallpaperService extends WallpaperService {
                 if (canvasLockHardwareCanvas != null) {
                     try {
                         surfaceHolder.unlockCanvasAndPost(canvasLockHardwareCanvas);
+                        if (this.renderer.fpsOn) {
+                            long completed = SystemClock.elapsedRealtime();
+                            if (this.fpsStartMs == 0L) { this.fpsStartMs = completed; this.fpsFrames = 0; }
+                            this.fpsFrames++;
+                            if (completed - this.fpsStartMs >= 1000L) {
+                                this.renderer.fpsValue = 1000f * this.fpsFrames / (completed - this.fpsStartMs);
+                                this.fpsFrames = 0; this.fpsStartMs = completed;
+                            }
+                        } else { this.fpsStartMs = 0L; this.fpsFrames = 0; }
                     } catch (Exception e) {
                     }
                 }

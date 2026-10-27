@@ -1,5 +1,5 @@
 plugins { id 'com.android.application' }
 android { namespace 'am.arasce.wallpaper'; compileSdk 35
- defaultConfig { applicationId 'am.arasce.wallpaper.luys3d'; minSdk 28; targetSdk 29; versionCode 9; versionName '2.7' }
+ defaultConfig { applicationId 'am.arasce.wallpaper.luys3d'; minSdk 28; targetSdk 29; versionCode 10; versionName '2.8' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

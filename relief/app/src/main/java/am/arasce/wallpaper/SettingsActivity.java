@@ -111,6 +111,14 @@ public class SettingsActivity extends Activity {
         toggle(effects, "Плавное пробуждение", "Мягкое появление при разблокировке", "wake_fade", true);
         toggle(effects, "Автоматическая экономия", "Около 30 кадров в секунду при заряде до 20% или системной экономии", "auto_energy", true);
         toggle(effects, "Тихий ночной режим", "С 22:00 до 07:00 движение и яркость букв уменьшаются", "quiet_night", false);
+        toggle(effects, "Счётчик кадров", "Показывает число кадров, отправленных приложением за секунду", "fps_display", false);
+        section("Экран блокировки");
+        LinearLayout lockScreen = card();
+        TextView lockInfo = text("Работает, когда Android создаёт отдельный экран блокировки. При общем движке настройки экранов могут совпадать.", 12, TEXT_DIM);
+        lockScreen.addView(lockInfo);
+        toggle(lockScreen, "Спокойный экран блокировки", "На отдельном экране блокировки уменьшить движение и яркость", "lock_quiet", false);
+        toggle(lockScreen, "Без дождя букв", "Скрыть дождь букв на отдельном экране блокировки", "lock_no_rain", false);
+        toggle(lockScreen, "Скрыть календарь", "Скрыть дату на отдельном экране блокировки", "lock_hide_calendar", false);
         section("Движение");
         LinearLayout linearLayoutCard = card();
         toggle(linearLayoutCard, "Объёмный наклон 3D", "Эмблема поворачивается в перспективе при наклоне телефона", "perspective", true);
@@ -134,6 +142,7 @@ public class SettingsActivity extends Activity {
         LinearLayout heritage = card();
         toggle(heritage, "Армянский календарь", "Традиционный 365-дневный календарь, летосчисление с 552 года", "armenian_calendar", true);
         toggle(heritage, "Праздник Навасард", "Показывать название в первый день традиционного года", "navasard_festival", false);
+        toggle(heritage, "Церковные праздники", "Рождество, Тярнындарач, Затик и Вардавар по распространённому календарю", "church_holidays", false);
         toggle(heritage, "Календарь под медальоном", "Выключено — сверху экрана", "calendar_below", false);
         TextView compassState = text(compassStatusText(), 13, TEXT_DIM);
         compassState.setPadding(dp(4), dp(6), dp(4), dp(6));
@@ -197,7 +206,7 @@ public class SettingsActivity extends Activity {
     private static final String[] STYLE_KEYS = {"effects_enabled","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
         "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
         "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
-        "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch"};
+        "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};
     private void saveMyStyle() {
         try {
             org.json.JSONObject data = new org.json.JSONObject();
