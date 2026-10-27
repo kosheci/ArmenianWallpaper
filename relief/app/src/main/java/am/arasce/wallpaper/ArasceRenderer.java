@@ -700,7 +700,7 @@ final class ArasceRenderer {
                 int index = Math.floorMod(col * 97 + row * 31 + ticks / 3, MATRIX_LETTERS.length());
                 float fade = (11f - row) / 11f;
                 int alpha = Math.min(255, (int)((row == 0 ? 230f : 125f * fade) * strength / 100f));
-                p.setColor(row == 0 ? 0xffb8ffd1 : 0xff36ca72);
+                p.setColor(row == 0 ? this.palette.light : this.palette.lit);
                 p.setAlpha(alpha);
                 canvas.drawText(MATRIX_LETTERS, index, index + 1, (col + 0.5f) * spacing, py, p);
             }
