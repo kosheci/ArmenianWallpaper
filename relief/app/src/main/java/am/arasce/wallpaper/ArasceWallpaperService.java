@@ -424,7 +424,8 @@ public class ArasceWallpaperService extends WallpaperService {
                 if (canvasLockHardwareCanvas != null) {
                     float age = fNow - this.touchAt;
                     float inscription = age >= 0f && age < 2.6f ? Math.min(1f, age / 0.35f) * Math.min(1f, (2.6f - age) / 1.1f) : 0f;
-                    this.renderer.draw(canvasLockHardwareCanvas, fNow, this.tiltX, this.tiltY, this.reveal, this.effectsEnabled ? inscription : 0f);
+                    float flip = this.reveal * this.reveal * (3f - 2f * this.reveal);
+                    this.renderer.draw(canvasLockHardwareCanvas, fNow, this.tiltX, this.tiltY, flip, this.effectsEnabled ? inscription : 0f);
                 }
                 if (canvasLockHardwareCanvas != null) {
                     try {

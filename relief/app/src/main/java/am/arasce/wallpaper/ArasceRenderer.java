@@ -775,7 +775,7 @@ final class ArasceRenderer {
         float turn = (float) Math.sin(Math.PI * p);
         float face = Math.abs((float) Math.cos(Math.PI * p));
         float radius = 350f * this.s;
-        float thickness = 8f * this.s * turn;
+        float thickness = 12f * this.s * turn;
         Paint pnt = this.flipPaint;
         pnt.setShader(null);
         pnt.setStyle(Paint.Style.FILL);
