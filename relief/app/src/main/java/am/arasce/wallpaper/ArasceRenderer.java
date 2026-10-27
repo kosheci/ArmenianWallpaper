@@ -721,8 +721,8 @@ final class ArasceRenderer {
                 if (regionIndex >= 0) {
                     String[] names = GavarCatalog.GAVAR_ARRAYS[regionIndex];
                     int pages = (names.length + 4) / 5;
-                    float font = Math.max(15f, this.w * 0.028f), line = font * 1.32f;
-                    float top = this.h * 0.64f;
+                    float font = Math.max(20f, this.w * 0.037f), line = font * 1.24f;
+                    float top = this.h * 0.60f;
                     this.flipPaint.setShader(null); this.flipPaint.setStyle(Paint.Style.FILL);
                     this.flipPaint.setColor(0xff08090b); this.flipPaint.setAlpha(220);
                     canvas.drawRoundRect(this.w*0.06f, top, this.w*0.94f, top + line*8f, 14f, 14f, this.flipPaint);
@@ -774,7 +774,7 @@ final class ArasceRenderer {
                 int index = this.matrixOrdered ? Math.floorMod(col * 11 + row, MATRIX_LETTERS.length()) : Math.floorMod(col * 97 + row * 31 + ticks / 9, MATRIX_LETTERS.length());
                 float depth = 0.55f + (col % 4) * 0.15f;
                 float fade = (11f - row) / 11f * depth;
-                int alpha = Math.min(255, (int)((row == 0 ? 230f : 125f * fade) * strength / 100f));
+                int alpha = Math.min(255, (int)((row == 0 ? 230f : 170f * fade) * strength / 100f));
                 p.setColor(row == 0 ? this.palette.light : this.palette.lit);
                 float blend = this.matrixOrdered ? 0f : (time / 3f - (float)Math.floor(time / 3f));
                 float fadeMix = blend < 0.7f ? 0f : (blend - 0.7f) / 0.3f;
@@ -862,7 +862,7 @@ final class ArasceRenderer {
             canvas.drawText(this.calendarText, this.w * 0.5f, dateY, p);
         }
         if (this.compassOn) {
-            float y = this.h * 0.86f;
+            float y = this.h * 0.73f;
             p.setTextSize(Math.max(16f, unit * 0.025f));
             if (!this.compassReady) {
                 p.setAlpha(190);
@@ -876,7 +876,7 @@ final class ArasceRenderer {
                     canvas.restore();
                 }
                 canvas.save(); canvas.translate(this.cx, y - unit * 0.038f); canvas.rotate(this.compassAngle);
-                float size = unit * 0.033f;
+                float size = unit * 0.046f;
                 this.compassPath.reset();
                 this.compassPath.moveTo(0, -size);
                 this.compassPath.lineTo(-size * 0.45f, size * 0.65f);

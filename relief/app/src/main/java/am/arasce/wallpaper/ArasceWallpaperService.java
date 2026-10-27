@@ -374,7 +374,9 @@ public class ArasceWallpaperService extends WallpaperService {
             if (!this.renderer.compassOn) return;
             long at = this.prefs.getLong("ararat_location_time", 0L);
             if (at <= 0 || System.currentTimeMillis() - at > 86400000L) {
-                this.renderer.compassReady = false; return;
+                this.renderer.compassReady = false;
+                this.renderer.compassStatus = at <= 0 ? "обновите местоположение" : "местоположение устарело";
+                return;
             }
             float lat = this.prefs.getFloat("ararat_lat", 0f), lon = this.prefs.getFloat("ararat_lon", 0f);
             long nowMs = System.currentTimeMillis();
