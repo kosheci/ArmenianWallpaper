@@ -163,6 +163,9 @@ public class SettingsActivity extends Activity {
         toggle(linearLayoutCard3, "Туманность", "Глубокие облака синего, фиолетового и бирюзового на фоне", "nebula", true);
         toggle(linearLayoutCard3, "Силуэт Арарата", "Горизонтальный силуэт меняет яркость в течение суток", "ararat_mountain", true);
         toggle(linearLayoutCard3, "Касания карты", "Коснитесь точки города или одного из 15 условных регионов", "map_touch", true);
+        slider(linearLayoutCard3, "Увеличение карты", "map_zoom", 100, 100, 250, "%");
+        slider(linearLayoutCard3, "Сдвиг карты по горизонтали", "map_x", 50, 10, 90, "%");
+        slider(linearLayoutCard3, "Сдвиг карты по вертикали", "map_y", 50, 10, 90, "%");
         toggle(linearLayoutCard3, "Карта державы Тиграна", "Художественная схема: границы и места областей условные. Двойное касание переворачивает медальон.", "map", true);
         section("Касания");
         LinearLayout linearLayoutCard4 = card();
@@ -206,7 +209,7 @@ public class SettingsActivity extends Activity {
     private static final String[] STYLE_KEYS = {"effects_enabled","sparkle_enabled","ripples_enabled","wake_fade","auto_energy",
         "emblem_size","emblem_x","emblem_y","parallax","speed","glow","motes","daycycle","night_gold","matrix_on","matrix_intensity",
         "matrix_density","matrix_speed","matrix_size","matrix_ordered","armenian_calendar","calendar_below","perspective",
-        "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};
+        "celestial","battery","sheen","rays","nebula","map","gestures","unlock","quiet_night","letter_halo","navasard_festival","north_marker","ararat_mountain","map_touch","map_zoom","map_x","map_y","church_holidays","fps_display","lock_quiet","lock_no_rain","lock_hide_calendar"};
     private void saveMyStyle() {
         try {
             org.json.JSONObject data = new org.json.JSONObject();

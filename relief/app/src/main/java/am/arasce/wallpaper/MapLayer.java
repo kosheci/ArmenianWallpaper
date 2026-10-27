@@ -154,21 +154,29 @@ final class MapLayer {
             for (int j = 0; j < REGIONS.length; j++) {
                 float rx = this.regionXY[j*2], ry = this.regionXY[j*2+1];
                 this.dot.setColor((this.light & 0x00ffffff) | (clamp((int)(150f*f)) << 24));
-                canvas.drawCircle(rx, ry, Math.max(2.5f, textSize * 0.22f), this.dot);
+                canvas.drawCircle(rx, ry, Math.max(4f, textSize * 0.32f), this.dot);
             }
             float araratX = (44.29833f - LON_C) * COS * this.k;
             float araratY = -(39.70194f - LAT_C) * this.k;
             this.label.setTextSize(textSize * 1.12f);
             this.dot.setColor((this.lit & 16777215) | (iClamp << 24));
-            canvas.drawCircle(araratX, araratY, Math.max(3f, textSize * 0.35f), this.dot);
+            float mountain = Math.max(8f, textSize * 0.85f);
+            Path peak = this.wall;
+            peak.reset(); peak.moveTo(araratX - mountain, araratY + mountain * 0.55f);
+            peak.lineTo(araratX, araratY - mountain);
+            peak.lineTo(araratX + mountain, araratY + mountain * 0.55f); peak.close();
+            this.dot.setColor((this.light & 0x00ffffff) | (iClamp << 24));
+            canvas.drawPath(peak, this.dot);
+            this.dot.setColor((this.lit & 0x00ffffff) | (iClamp << 24));
+            canvas.drawCircle(araratX, araratY, Math.max(3f, textSize * 0.23f), this.dot);
             canvas.drawText("ԱՐԱՐԱՏ ▲", araratX, araratY - textSize, this.label);
             this.label.setTextSize(textSize);
             this.label.setLetterSpacing(0.18f);
         }
     }
 
-    String findCity(float x, float y) {
-        float limit = Math.max(26f, this.label.getTextSize() * 3f);
+    String findCity(float x, float y, float zoom) {
+        float limit = Math.max(52f / Math.max(1f, zoom), this.label.getTextSize() * 4f);
         float best = limit * limit;
         String name = "";
         for (int i = 0; i < CITIES.length; i++) {

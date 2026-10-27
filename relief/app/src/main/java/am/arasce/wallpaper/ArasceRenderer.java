@@ -58,6 +58,7 @@ final class ArasceRenderer {
     boolean raysOn = true;
     boolean nebulaOn = true;
     boolean mapOn = true;
+    float mapZoom = 1f, mapShiftX = 0f, mapShiftY = 0f;
     boolean effectsOn = true;
     boolean sparkleOn = true;
     boolean mountainOn = true, letterHaloOn = false, festivalOn = false, festivalToday = false;
@@ -564,8 +565,9 @@ final class ArasceRenderer {
             if (this.matrixOn) drawArmenianMatrix(canvas, f);
             if (this.mapOn && f4 >= 0.5f) {
                 canvas.save();
-                canvas.translate(this.cx - ((f6 * f8) * 0.15f), this.cy - ((f7 * f8) * 0.15f));
+                canvas.translate(this.cx - ((f6 * f8) * 0.15f) + this.mapShiftX * this.w, this.cy - ((f7 * f8) * 0.15f) + this.mapShiftY * this.h);
                 canvas.scale(Math.max(0.001f, -(float)Math.cos(Math.PI * f4)), 1f);
+                canvas.scale(this.mapZoom, this.mapZoom);
                 applyMapPerspective(canvas, f6, f7);
                 canvas.save();
                 canvas.translate(0f, 3f * this.s);
@@ -798,8 +800,10 @@ final class ArasceRenderer {
     void selectMapAt(float x, float y, float tx, float ty, float time) {
         if (!this.mapTouchOn) return;
         float f6 = tx * this.parallaxMul, f7 = ty * this.parallaxMul;
-        float[] point = {x - (this.cx - f6 * this.parallax * 0.15f),
-                         y - (this.cy - f7 * this.parallax * 0.15f)};
+        float[] point = {x - (this.cx - f6 * this.parallax * 0.15f + this.mapShiftX * this.w),
+                         y - (this.cy - f7 * this.parallax * 0.15f + this.mapShiftY * this.h)};
+        point[0] /= this.mapZoom;
+        point[1] /= this.mapZoom;
         if (this.perspectiveOn) {
             this.perspectiveCamera.save();
             this.perspectiveCamera.setLocation(0f, 0f, -16f);
@@ -810,7 +814,7 @@ final class ArasceRenderer {
             Matrix inverse = new Matrix();
             if (this.perspectiveMatrix.invert(inverse)) inverse.mapPoints(point);
         }
-        this.selectedMapCity = this.map.findCity(point[0], point[1]);
+        this.selectedMapCity = this.map.findCity(point[0], point[1], this.mapZoom);
         this.selectedUntil = time + 3.5f;
     }
 
