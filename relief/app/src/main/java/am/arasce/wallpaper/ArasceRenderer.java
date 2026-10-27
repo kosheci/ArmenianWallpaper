@@ -65,6 +65,7 @@ final class ArasceRenderer {
     boolean batteryOn = true;
     int batteryPercent = -1;
     private final Paint celestialPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint flipPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF celestialArc = new RectF(-375f, -375f, 375f, 375f);
     private float s = 1.0f;
     private float lastT = -1.0f;
@@ -520,6 +521,7 @@ final class ArasceRenderer {
                 canvas.drawBitmap(this.nebula, 0.0f, 0.0f, this.nebulaPaint);
                 canvas.restore();
             }
+            drawFlipDisc(canvas, f4);
             if (this.mapOn && f4 >= 0.5f) {
                 canvas.save();
                 canvas.translate(this.cx - ((f6 * f8) * 0.15f), this.cy - ((f7 * f8) * 0.15f));
@@ -656,6 +658,38 @@ final class ArasceRenderer {
                 canvas.drawBitmap(this.mBokeh[i2] ? this.bokehSprite : this.dotSprite, (Rect) null, this.tmpRect, this.spritePaint);
             }
             canvas.drawRect(0.0f, 0.0f, this.w, this.h, this.vignettePaint);
+        }
+    }
+
+    private void drawFlipDisc(Canvas canvas, float progress) {
+        float p = Math.max(0f, Math.min(1f, progress));
+        float turn = (float) Math.sin(Math.PI * p);
+        float face = Math.abs((float) Math.cos(Math.PI * p));
+        float radius = 350f * this.s;
+        float thickness = 8f * this.s * turn;
+        Paint pnt = this.flipPaint;
+        pnt.setShader(null);
+        pnt.setStyle(Paint.Style.FILL);
+        pnt.setColor(this.palette.dark);
+        pnt.setAlpha(235);
+        canvas.drawOval(this.cx - radius * face - thickness, this.cy - radius,
+                this.cx + radius * face + thickness, this.cy + radius, pnt);
+        pnt.setColor(this.palette.bg);
+        pnt.setAlpha(245);
+        canvas.drawOval(this.cx - radius * face, this.cy - radius,
+                this.cx + radius * face, this.cy + radius, pnt);
+        pnt.setStyle(Paint.Style.STROKE);
+        pnt.setStrokeWidth(Math.max(1f, 2.2f * this.s));
+        pnt.setColor(this.palette.light);
+        pnt.setAlpha((int)(95 + 100 * turn));
+        canvas.drawOval(this.cx - radius * face - thickness * 0.55f, this.cy - radius,
+                this.cx + radius * face + thickness * 0.55f, this.cy + radius, pnt);
+        pnt.setStyle(Paint.Style.FILL);
+        if (turn > 0.02f) {
+            pnt.setColor(this.palette.lit);
+            pnt.setAlpha((int)(45 * turn));
+            canvas.drawOval(this.cx - thickness * 0.32f, this.cy - radius * 0.75f,
+                    this.cx + thickness * 0.32f, this.cy + radius * 0.75f, pnt);
         }
     }
 

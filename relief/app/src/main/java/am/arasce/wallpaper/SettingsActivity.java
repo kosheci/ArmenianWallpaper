@@ -16,6 +16,7 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /* loaded from: classes.dex */
 public class SettingsActivity extends Activity {
@@ -32,6 +33,10 @@ public class SettingsActivity extends Activity {
         super.onCreate(bundle);
         this.prefs = Settings.prefs(this);
         build();
+        if (!this.prefs.getBoolean("flip_hint_shown", false)) {
+            Toast.makeText(this, "Дважды коснитесь обоев, чтобы открыть карту", Toast.LENGTH_LONG).show();
+            this.prefs.edit().putBoolean("flip_hint_shown", true).apply();
+        }
     }
 
     /* JADX INFO: Access modifiers changed from: private */

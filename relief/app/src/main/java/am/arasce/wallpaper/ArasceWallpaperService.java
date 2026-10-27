@@ -274,10 +274,10 @@ public class ArasceWallpaperService extends WallpaperService {
                 this.lastTapY = f2;
                 this.touchAt = fNow;
                 if (this.gestures) {
-                    this.renderer.addRipple(f, f2, fNow);
+                    if (!z2) this.renderer.addRipple(f, f2, fNow);
                     if (z2 && this.renderer.mapOn) {
                         this.holdReveal = !this.holdReveal;
-                        this.flare = 1.0f;
+                        this.flare = 0.25f;
                         this.lastTapT = -100.0f;
                     }
                 }
