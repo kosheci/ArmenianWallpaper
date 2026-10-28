@@ -620,11 +620,11 @@ final class ArasceRenderer {
                 canvas.translate(-this.cx, -this.cy);
             if (this.celestialOn) drawCelestial(canvas, f, f6, f7);
             if (this.effectsOn && this.letterHaloOn) drawLetterHalo(canvas, f, f6, f7);
-            if (this.perspectiveOn) {
+            {
                 canvas.save();
                 canvas.translate(this.cx, this.cy);
                 canvas.scale(this.s, this.s);
-                this.relief.draw(canvas, f6, f7, this.palette.light);
+                this.relief.draw(canvas, this.perspectiveOn ? f6 : 0f, this.perspectiveOn ? f7 : 0f, this.palette.light);
                 canvas.restore();
             }
             if (this.raysOn) {

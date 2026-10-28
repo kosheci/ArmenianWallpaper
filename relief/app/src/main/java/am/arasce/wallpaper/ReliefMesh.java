@@ -102,7 +102,14 @@ final class ReliefMesh {
                 double scale=1200.0/(1200.0-depth);
                 projected[2*i]=(float)(xx*scale); projected[2*i+1]=(float)(yy*scale);
             }
-            float light=Math.max(0.2f,Math.min(1f,f.light));
+            // Diffuse lighting from the actual face normal; keeps thickness readable at rest.
+            float ux=f.p[3]-f.p[0], uy=f.p[4]-f.p[1], uz=f.p[5]-f.p[2];
+            float vx=f.p[6]-f.p[0], vy=f.p[7]-f.p[1], vz=f.p[8]-f.p[2];
+            float nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+            double len=Math.sqrt(nx*nx+ny*ny+nz*nz);
+            double xx=nx*cy+nz*sy, zz=-nx*sy+nz*cy, yy=ny*cx-zz*sx, z2=ny*sx+zz*cx;
+            float diffuse=len>0.0001 ? (float)Math.abs((-0.36*xx-0.48*yy+0.80*z2)/len) : 0.5f;
+            float light=Math.max(0.25f,Math.min(0.94f,0.26f+0.68f*diffuse)) * (0.78f+0.22f*f.light);
             paint.setColor(Color.rgb((int)(Color.red(baseColor)*light),(int)(Color.green(baseColor)*light),(int)(Color.blue(baseColor)*light)));
             path.reset();path.moveTo(projected[0],projected[1]);for(int i=1;i<4;i++)path.lineTo(projected[i*2],projected[i*2+1]);path.close();c.drawPath(path,paint);
         }

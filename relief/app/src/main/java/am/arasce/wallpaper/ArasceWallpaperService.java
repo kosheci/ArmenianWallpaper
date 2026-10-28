@@ -106,7 +106,7 @@ public class ArasceWallpaperService extends WallpaperService {
                     if (ArasceEngine.this.unlockFlash && ArasceEngine.this.effectsEnabled) {
                         float fNow = ArasceEngine.this.now();
                         ArasceEngine.this.flare = 1.0f;
-                        if (ArasceEngine.this.prefs.getBoolean("wake_fade", true)) ArasceEngine.this.renderer.wakeAt = fNow;
+                        if (ArasceEngine.this.prefs.getBoolean("wake_fade", false)) ArasceEngine.this.renderer.wakeAt = fNow;
                         ArasceEngine.this.touchAt = fNow;
                         if (ArasceEngine.this.ripplesEnabled) ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow);
                         if (ArasceEngine.this.ripplesEnabled) ArasceEngine.this.renderer.addRipple(ArasceEngine.this.renderer.centerX(), ArasceEngine.this.renderer.centerY(), fNow + 0.25f);
@@ -139,34 +139,34 @@ public class ArasceWallpaperService extends WallpaperService {
         }
 
         private void applySettings() {
-            this.effectsEnabled = this.prefs.getBoolean("effects_enabled", true);
-            this.ripplesEnabled = this.effectsEnabled && this.prefs.getBoolean("ripples_enabled", true);
+            this.effectsEnabled = this.prefs.getBoolean("effects_enabled", false);
+            this.ripplesEnabled = this.effectsEnabled && this.prefs.getBoolean("ripples_enabled", false);
             this.renderer.effectsOn = this.effectsEnabled;
-            this.renderer.inscriptionOn = this.prefs.getBoolean("inscription_on", true);
+            this.renderer.inscriptionOn = this.prefs.getBoolean("inscription_on", false);
             this.renderer.setInscription(this.prefs.getString("inscription_text", "Աստուած արասցէ"));
-            this.renderer.sparkleOn = this.prefs.getBoolean("sparkle_enabled", true);
+            this.renderer.sparkleOn = this.prefs.getBoolean("sparkle_enabled", false);
             this.renderer.parallaxMul = this.effectsEnabled ? this.prefs.getInt("parallax", 70) / 100.0f : 0f;
             this.renderer.speedMul = this.effectsEnabled ? this.prefs.getInt("speed", 65) / 100.0f : 0f;
             this.renderer.ambientBase = this.effectsEnabled ? this.prefs.getInt("glow", 18) / 100.0f : 0f;
             this.renderer.moteCount = this.effectsEnabled ? this.prefs.getInt("motes", 40) : 0;
-            this.renderer.sheenOn = this.effectsEnabled && this.prefs.getBoolean("sheen", true);
+            this.renderer.sheenOn = this.effectsEnabled && this.prefs.getBoolean("sheen", false);
             this.renderer.raysOn = this.effectsEnabled && this.prefs.getBoolean("rays", false);
-            this.renderer.nebulaOn = this.effectsEnabled && this.prefs.getBoolean("nebula", true);
-            this.renderer.mapOn = this.prefs.getBoolean("map", true);
+            this.renderer.nebulaOn = this.effectsEnabled && this.prefs.getBoolean("nebula", false);
+            this.renderer.mapOn = this.prefs.getBoolean("map", false);
             if (!this.renderer.mapOn) this.holdReveal = false;
-            this.renderer.terrainOn = this.prefs.getBoolean("map_terrain", true);
-            this.renderer.metalDepthOn = this.prefs.getBoolean("metal_depth", true);
-            this.renderer.flipDepthOn = this.prefs.getBoolean("flip_depth", true);
+            this.renderer.terrainOn = this.prefs.getBoolean("map_terrain", false);
+            this.renderer.metalDepthOn = this.prefs.getBoolean("metal_depth", false);
+            this.renderer.flipDepthOn = this.prefs.getBoolean("flip_depth", false);
             this.renderer.mapZoom = this.prefs.getInt("map_zoom", 100) / 100f;
             this.renderer.mapShiftX = (this.prefs.getInt("map_x", 50) - 50) / 100f;
             this.renderer.mapShiftY = (this.prefs.getInt("map_y", 50) - 50) / 100f;
-            this.renderer.matrixOn = this.effectsEnabled && this.prefs.getBoolean("matrix_on", true);
+            this.renderer.matrixOn = this.effectsEnabled && this.prefs.getBoolean("matrix_on", false);
             this.renderer.matrixIntensity = this.prefs.getInt("matrix_intensity", 55);
             this.renderer.matrixDensity = this.prefs.getInt("matrix_density", 100);
             this.renderer.matrixSpeed = this.prefs.getInt("matrix_speed", 100);
             this.renderer.matrixSize = this.prefs.getInt("matrix_size", 100);
             this.renderer.matrixOrdered = this.prefs.getBoolean("matrix_ordered", false);
-            this.renderer.rainDepthOn = this.prefs.getBoolean("rain_depth", true);
+            this.renderer.rainDepthOn = this.prefs.getBoolean("rain_depth", false);
             this.renderer.cleanMode = this.prefs.getBoolean("clean_mode", false);
             this.renderer.compassX = this.prefs.getInt("compass_x", 50) / 100f;
             this.renderer.compassY = this.prefs.getInt("compass_y", 73) / 100f;
@@ -175,16 +175,16 @@ public class ArasceWallpaperService extends WallpaperService {
             if (this.renderer.cleanMode) { this.renderer.matrixOn = false; this.renderer.moteCount = 0; }
             this.renderer.calendarPosition = this.prefs.getBoolean("calendar_below", false) ? 1 : 0;
             this.renderer.setLayout(this.prefs.getInt("emblem_size", 100) / 100f, this.prefs.getInt("emblem_x", 50) / 100f, this.prefs.getInt("emblem_y", 56) / 100f);
-            this.autoEnergy = this.prefs.getBoolean("auto_energy", true);
+            this.autoEnergy = this.prefs.getBoolean("auto_energy", false);
             this.environmentCheckedAt = 0L;
-            this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", true);
-            this.renderer.mountainOn = this.prefs.getBoolean("ararat_mountain", true);
+            this.renderer.calendarOn = this.prefs.getBoolean("armenian_calendar", false);
+            this.renderer.mountainOn = this.prefs.getBoolean("ararat_mountain", false);
             this.renderer.letterHaloOn = this.prefs.getBoolean("letter_halo", false);
-            this.renderer.northOn = this.prefs.getBoolean("north_marker", true);
+            this.renderer.northOn = this.prefs.getBoolean("north_marker", false);
             this.renderer.festivalOn = this.prefs.getBoolean("navasard_festival", false);
             this.renderer.churchHolidaysOn = this.prefs.getBoolean("church_holidays", false);
             this.renderer.fpsOn = this.prefs.getBoolean("fps_display", false);
-            this.renderer.mapTouchOn = this.prefs.getBoolean("map_touch", true);
+            this.renderer.mapTouchOn = this.prefs.getBoolean("map_touch", false);
             this.renderer.compassOn = this.prefs.getBoolean("ararat_compass", false);
             if (!this.renderer.compassOn) {
                 this.renderer.compassReady = false;
@@ -192,13 +192,13 @@ public class ArasceWallpaperService extends WallpaperService {
             }
             this.renderer.compassStatus = this.rotationSensor == null ? "датчик недоступен" : "обновите местоположение";
             if (this.visibleNow && this.renderer.compassOn && this.rotationSensor != null) this.sensorManager.registerListener(this, this.rotationSensor, SensorManager.SENSOR_DELAY_UI);
-            this.renderer.perspectiveOn = this.effectsEnabled && this.prefs.getBoolean("perspective", true);
-            this.renderer.celestialOn = this.effectsEnabled && this.prefs.getBoolean("celestial", true);
-            this.renderer.batteryOn = this.prefs.getBoolean("battery", true);
+            this.renderer.perspectiveOn = this.effectsEnabled && this.prefs.getBoolean("perspective", false);
+            this.renderer.celestialOn = this.effectsEnabled && this.prefs.getBoolean("celestial", false);
+            this.renderer.batteryOn = this.prefs.getBoolean("battery", false);
             updateBattery();
-            this.gestures = this.prefs.getBoolean("gestures", true);
-            this.unlockFlash = this.prefs.getBoolean("unlock", true);
-            this.dayCycle = this.prefs.getBoolean("daycycle", true);
+            this.gestures = this.prefs.getBoolean("gestures", false);
+            this.unlockFlash = this.prefs.getBoolean("unlock", false);
+            this.dayCycle = this.prefs.getBoolean("daycycle", false);
             this.nightGold = this.prefs.getBoolean("night_gold", false);
             if (!this.gestures) {
                 this.holdReveal = false;

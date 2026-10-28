@@ -33,10 +33,15 @@ final class Settings {
     }
 
     static SharedPreferences prefs(Context context) {
-        return context.getSharedPreferences(PREFS, 0);
+        SharedPreferences p = context.getSharedPreferences(PREFS, 0);
+        synchronized (Settings.class) {
+            if (p.getInt("defaults_version", 0) < 21)
+                p.edit().clear().putInt("defaults_version", 21).apply();
+        }
+        return p;
     }
 
     static void reset(Context context) {
-        prefs(context).edit().clear().apply();
+        prefs(context).edit().clear().putInt("defaults_version", 21).apply();
     }
 }
